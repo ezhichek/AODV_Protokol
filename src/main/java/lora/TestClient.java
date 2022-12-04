@@ -1,16 +1,12 @@
+package lora;
+
 import com.fazecast.jSerialComm.SerialPort;
 
 import java.util.Scanner;
 
-public class PortSelectorClient {
+public class TestClient {
 
     private void start() {
-
-        final SerialPort[] availablePorts = SerialPort.getCommPorts();
-
-        for (int i = 0; i < availablePorts.length; i++) {
-            System.out.println("(" + (i + 1) + ") " + availablePorts[i].getDescriptivePortName());
-        }
 
         SerialConnector connector = null;
 
@@ -18,17 +14,12 @@ public class PortSelectorClient {
 
         while (true) {
             if (connector == null) {
-                System.out.print("Please select a port or press 0 to quit: ");
-                final int i = scanner.nextInt();
-                scanner.nextLine();
-                if (i == 0) {
+                System.out.print("Please enter port or press 0 to quit: ");
+                final String s = scanner.nextLine();
+                if (s.trim().equals("0")) {
                     return;
                 }
-                if (i < 1 || i > availablePorts.length) {
-                    System.out.println("Invalid port");
-                    continue;
-                }
-                connector = new SerialConnector(availablePorts[i-1]);
+                connector = new SerialConnector(SerialPort.getCommPort(s));
                 try {
                     connector.connect();
                 } catch (Exception e) {
@@ -36,7 +27,6 @@ public class PortSelectorClient {
                     continue;
                 }
             }
-            System.out.print("Enter your command or press 0 to quit: ");
             final String command = scanner.nextLine();
             if (command.equals("0")) {
                 return;
@@ -51,6 +41,6 @@ public class PortSelectorClient {
     }
 
     public static void main(String[] args) {
-        new PortSelectorClient().start();
+        new TestClient().start();
     }
 }

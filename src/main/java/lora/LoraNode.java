@@ -1,3 +1,7 @@
+package lora;
+
+import aodv.RouteRequest;
+import aodv.Router;
 import com.fazecast.jSerialComm.SerialPort;
 import org.apache.commons.lang3.StringUtils;
 
@@ -10,7 +14,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-public class TestServer extends DefaultSerialEventHandler {
+public class LoraNode extends DefaultSerialEventHandler {
 
     private static final String AT_OK = "AT,OK";
 
@@ -18,22 +22,22 @@ public class TestServer extends DefaultSerialEventHandler {
     private static final String ERR_CMD = "ERR:CMD";
 
     private final Map<String, Function<String, String>> commands = new HashMap<>() {{
-        put("AT", TestServer.this::replyAtOk);
-        put("AT+RST", TestServer.this::replyAtOk);
-        put("AT+VER", TestServer.this::ver);
-        put("AT+IDLE", TestServer.this::replyAtOk);
-        put("AT+SLEEP", TestServer.this::sleep);
-        put("AT+RX", TestServer.this::replyAtOk);
-        put("AT+RSSI?", TestServer.this::rssi);
-        put("AT+ADDR", TestServer.this::setAddr);
-        put("AT+ADDR?", TestServer.this::getAddr);
-        put("AT+DEST", TestServer.this::setDest);
-        put("AT+DEST?", TestServer.this::getDest);
-        put("AT+CFG", TestServer.this::replyAtOk);
-        put("AT+SAVE", TestServer.this::replyAtOk);
-        put("AT+SEND", TestServer.this::send);
-        put("AT+PB0", TestServer.this::setPb0);
-        put("AT+PB0?", TestServer.this::getPb0);
+        put("AT", LoraNode.this::onAt);
+        put("AT+RST", LoraNode.this::onRst);
+        put("AT+VER", LoraNode.this::onVer);
+        put("AT+IDLE", LoraNode.this::onIdle);
+        put("AT+SLEEP", LoraNode.this::onSleep);
+        put("AT+RX", LoraNode.this::onRx);
+        put("AT+RSSI?", LoraNode.this::onRssi);
+        put("AT+ADDR", LoraNode.this::onSetAddr);
+        put("AT+ADDR?", LoraNode.this::onGetAddr);
+        put("AT+DEST", LoraNode.this::onSetDest);
+        put("AT+DEST?", LoraNode.this::onGetDest);
+        put("AT+CFG", LoraNode.this::onCfg);
+        put("AT+SAVE", LoraNode.this::onSafe);
+        put("AT+SEND", LoraNode.this::onSend);
+        put("AT+PB0", LoraNode.this::onSetPb0);
+        put("AT+PB0?", LoraNode.this::onGetPb0);
     }};
 
     private SerialConnector connector = null;
@@ -45,6 +49,8 @@ public class TestServer extends DefaultSerialEventHandler {
     private int pb0;
 
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
+    private final Router router = new Router();
 
     public void start() {
         final Scanner scanner = new Scanner(System.in);
@@ -66,10 +72,16 @@ public class TestServer extends DefaultSerialEventHandler {
     }
 
     @Override
-    protected void handleText(String text) {
-        System.out.println("Received text: " + text);
+    protected void handleSendBytes(byte[] bytes) {
+        System.out.println("Received " + bytes.length + " bytes");
         try {
             connector.sendCommand("AT,SENDING");
+            if (RouteRequest.isRouteRequest(bytes)) {
+
+            }
+
+
+
             connector.sendCommand("AT,SENDED");
         } catch (IOException e) {
             System.out.println("Failed to send reply 'SENDING/SENDED': " + e.getMessage());
@@ -93,37 +105,47 @@ public class TestServer extends DefaultSerialEventHandler {
         return ERR_CMD;
     }
 
-    private String replyAtOk(String command) {
+    private String onAt(String command) {
         return AT_OK;
     }
 
-    private String ver(String command) {
+    private String onRst(String command) {
+        return AT_OK;
+    }
+
+    private String onVer(String command) {
         return "AT,V0.3,OK";
     }
 
-    private String sleep(String command) {
+    private String onIdle(String command) {
+        return AT_OK;
+    }
+
+    private String onSleep(String command) {
         try {
             final int seconds = Integer.parseInt(StringUtils.substringAfter(command, "="));
-            executor.schedule(this::wakeUp, seconds, TimeUnit.SECONDS);
+            executor.schedule(() -> {
+                try {
+                    connector.sendCommand("AT,WakeUp");
+                } catch (IOException e) {
+                    System.out.println("Failed to send reply 'AT,WakeUp': " + e.getMessage());
+                }
+            }, seconds, TimeUnit.SECONDS);
             return AT_OK;
         } catch (Exception e) {
             return ERR_PARA;
         }
     }
 
-    private void wakeUp() {
-        try {
-            connector.sendCommand("AT,WakeUp");
-        } catch (IOException e) {
-            System.out.println("Failed to send reply 'AT,WakeUp': " + e.getMessage());
-        }
+    private String onRx(String command) {
+        return AT_OK;
     }
 
-    private String rssi(String command) {
+    private String onRssi(String command) {
         return "AT,-063,OK";
     }
 
-    private String setAddr(String command) {
+    private String onSetAddr(String command) {
         try {
             this.address = parseAddr(StringUtils.substringAfter(command, "="));
             return AT_OK;
@@ -132,11 +154,11 @@ public class TestServer extends DefaultSerialEventHandler {
         }
     }
 
-    private String getAddr(String command) {
+    private String onGetAddr(String command) {
         return "AT," + formatAddr(address) + ",OK";
     }
 
-    private String setDest(String command) {
+    private String onSetDest(String command) {
         try {
             this.destination = parseAddr(StringUtils.substringAfter(command, "="));
             return AT_OK;
@@ -145,12 +167,20 @@ public class TestServer extends DefaultSerialEventHandler {
         }
     }
 
-    private String getDest(String command) {
+    private String onGetDest(String command) {
         return "AT," + formatAddr(destination) + ",OK";
     }
 
-    private String send(String command) {
-        int sendBytes = 0;
+    private String onCfg(String command) {
+        return AT_OK;
+    }
+
+    private String onSafe(String command) {
+        return AT_OK;
+    }
+
+    private String onSend(String command) {
+        int sendBytes;
         try {
             sendBytes = Integer.parseInt(StringUtils.substringAfter(command, "="));
         } catch (Exception e) {
@@ -159,11 +189,11 @@ public class TestServer extends DefaultSerialEventHandler {
         if (sendBytes < 1 || sendBytes > 250) {
             return ERR_PARA;
         }
-        setSendBytes(sendBytes);
+        switchToSendMode(sendBytes);
         return AT_OK;
     }
 
-    private String setPb0(String command) {
+    private String onSetPb0(String command) {
         final String flag = StringUtils.substringAfter(command, "=");
         if ("0".equals(flag)) {
             this.pb0 = 0;
@@ -175,7 +205,7 @@ public class TestServer extends DefaultSerialEventHandler {
         return AT_OK;
     }
 
-    private String getPb0(String command) {
+    private String onGetPb0(String command) {
         return "AT," + pb0 + ",OK";
     }
 
@@ -192,7 +222,7 @@ public class TestServer extends DefaultSerialEventHandler {
     }
 
     public static void main(String[] args) {
-        new TestServer().start();
+        new LoraNode().start();
     }
 
 }

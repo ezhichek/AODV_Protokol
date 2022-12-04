@@ -1,3 +1,5 @@
+package lora;
+
 import com.fazecast.jSerialComm.SerialPort;
 
 import java.util.Scanner;
