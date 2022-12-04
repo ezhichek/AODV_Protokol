@@ -6,22 +6,25 @@ import java.io.IOException;
 
 public class SerialConnector implements SerialPortDataListener {
 
-    private static final char DELIMITER = '\n';
-
     private final SerialPort port;
 
-    private final StringBuilder builder = new StringBuilder();
+    private final SerialEventHandler eventHandler;
 
     public SerialConnector(SerialPort port) {
+        this(port, new DefaultSerialEventHandler());
+    }
+
+    public SerialConnector(SerialPort port, SerialEventHandler eventHandler) {
         this.port = port;
+        this.eventHandler = eventHandler;
     }
 
     public void connect() {
-        if (!port.isOpen()) {
-            port.openPort(3000);
-            port.addDataListener(this);
-            System.out.println("Opened port: " + port.getDescriptivePortName());
+        if (!port.isOpen() && !port.openPort(2000)) {
+            throw new RuntimeException();
         }
+        port.addDataListener(this);
+        System.out.println("Opened port: " + port.getDescriptivePortName());
     }
 
     public void sendCommand(String command) throws IOException {
@@ -39,19 +42,6 @@ public class SerialConnector implements SerialPortDataListener {
         final SerialPort sp = event.getSerialPort();
         final byte[] bytes = new byte[sp.bytesAvailable()];
         sp.readBytes(bytes, bytes.length);
-        handleMessage(new String(bytes));
+        eventHandler.handleEvent(bytes);
     }
-
-    private void handleMessage(String message) {
-        final int idx = message.indexOf(DELIMITER);
-        if (idx >= 0) {
-            builder.append(message, 0, idx);
-            System.out.println(builder);
-            builder.setLength(0);
-            builder.append(message, idx + 1, message.length());
-        } else {
-            builder.append(message);
-        }
-    }
-
  }
