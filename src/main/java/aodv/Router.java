@@ -2,7 +2,6 @@ package aodv;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class Router {
 
@@ -82,7 +81,7 @@ public class Router {
 
             route = new Route();
             route.setDestinationAddress(request.getDestinationAddress());
-            route.setDestinationSequenceNumber(request.getOriginatorSequenceNumber());
+            route.setDestinationSequenceNumber(request.getOriginatorSequence());
             route.setHopCount(1);
             route.setNextHop(request.getOriginatorAddress());
             route.setLifetime(Constants.ACTIVE_ROUTE_TIMEOUT);
@@ -91,9 +90,9 @@ public class Router {
 
             routes.put(request.getDestinationAddress(), route);
 
-        } else if (request.getOriginatorSequenceNumber() > route.getDestinationSequenceNumber()) {
+        } else if (request.getOriginatorSequence() > route.getDestinationSequenceNumber()) {
 
-            route.setDestinationSequenceNumber(request.getOriginatorSequenceNumber());
+            route.setDestinationSequenceNumber(request.getOriginatorSequence());
         }
     }
 
@@ -116,7 +115,7 @@ public class Router {
         for the destination is valid and greater than or equal to
         the Destination Sequence Number of the RREQ (comparison using signed 32-bit arithmetic)
         */
-        return route != null && route.isValid() && route.getDestinationSequenceNumber() >= request.getOriginatorSequenceNumber();
+        return route != null && route.isValid() && route.getDestinationSequenceNumber() >= request.getOriginatorSequence();
     }
 
     private void generateRouteReplyFromDestination(RouteRequest request) {
@@ -128,7 +127,7 @@ public class Router {
         destination does not change its sequence number before generating the
         RREP message.
         */
-        if (request.getDestinationSequenceNumber() == sequenceNumber + 1) {
+        if (request.getDestinationSequence() == sequenceNumber + 1) {
             sequenceNumber++;
         }
 
@@ -147,7 +146,7 @@ public class Router {
         its value for MY_ROUTE_TIMEOUT, within mild constraints (see section
         10).
         */
-        final long lifetime = Constants.MY_ROUTE_TIMEOUT;
+        final int lifetime = Constants.MY_ROUTE_TIMEOUT;
 
         /*
         When generating a RREP message, a node copies the Destination IP
@@ -201,7 +200,7 @@ public class Router {
         subtracting the current time from the expiration time in its route
         table entry.
         */
-        final long lifetime = forwardRoute.getLifetime() - System.currentTimeMillis();
+        final int lifetime = forwardRoute.getLifetime() - 0; // System.currentTimeMillis();
 
         /*
         When generating a RREP message, a node copies the Destination IP
@@ -268,9 +267,9 @@ public class Router {
                 hopCount,
                 receivedRequest.getRequestId(),
                 receivedRequest.getDestinationAddress(),
-                receivedRequest.getDestinationSequenceNumber(),
+                receivedRequest.getDestinationSequence(),
                 receivedRequest.getOriginatorAddress(),
-                receivedRequest.getOriginatorSequenceNumber());
+                receivedRequest.getOriginatorSequence());
 
         //routeRequest.setPrevHopAddress(this.nodeAddress);
 

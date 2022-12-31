@@ -13,7 +13,7 @@ public class Route {
 
     private int nextHop;
 
-    private long lifetime;
+    private int lifetime;
 
     private boolean valid;
 
@@ -51,11 +51,11 @@ public class Route {
         this.nextHop = nextHop;
     }
 
-    public long getLifetime() {
+    public int getLifetime() {
         return lifetime;
     }
 
-    public void setLifetime(long lifetime) {
+    public void setLifetime(int lifetime) {
         this.lifetime = lifetime;
     }
 
