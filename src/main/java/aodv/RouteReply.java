@@ -3,7 +3,6 @@ package aodv;
 import java.io.*;
 
 import static aodv.Utils.*;
-import static aodv.Utils.toLong;
 
 public class RouteReply {
 
@@ -90,16 +89,16 @@ public class RouteReply {
         byte[] tmp = new byte[3];
 
         input.readFully(tmp);
-        final long block1 = toLong(tmp);
+        final int block1 = toInt(tmp);
         final int lifeTime = (int)((block1 >> 6) & 0x3FFFF);
 
         input.readFully(tmp);
-        final long block2 = toLong(tmp);
+        final int block2 = toInt(tmp);
         final int destinationAddress = (int)((block2 >> 8) & 0xFFFF);
         final int destinationSequence = (int)(block2 & 0xFF);
 
         input.readFully(tmp);
-        final long block3 = toLong(tmp);
+        final int block3 = toInt(tmp);
         final int originatorAddress = (int)((block3 >> 8) & 0xFFFF);
         final int hopCount = (int)(block3 & 0xFF);
 

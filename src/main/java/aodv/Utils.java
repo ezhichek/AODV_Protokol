@@ -2,14 +2,13 @@ package aodv;
 
 public class Utils {
 
-
     public static final int INT_MASK = 0xffffffff;
     public static final int MAX_6_BITS = 64 - 1;
     public static final int MAX_8_BITS = 256 - 1;
     public static final int MAX_16_BITS = 65536 - 1;
     public static final int MAX_18_BITS = 262144 - 1;
 
-    public static byte[] toBytes(long value, int length) {
+    public static byte[] toBytes(int value, int length) {
         if (value < 0 || value > Math.pow(2, length * 8)) {
             throw new RuntimeException("Invalid value");
         }
@@ -25,15 +24,11 @@ public class Utils {
     }
 
     public static int toInt(byte[] bytes) {
-        return (int)toLong(bytes);
-    }
-
-    public static long toLong(byte[] bytes) {
         final int length = bytes.length;
         if (length == 0 || length > 8) {
             throw new RuntimeException("Invalid bytes");
         }
-        long value = 0;
+        int value = 0;
         for (int i = 0; i < length; i++) {
             value <<= Byte.SIZE;
             value |= (bytes[i] & 0xFF);
@@ -41,35 +36,26 @@ public class Utils {
         return value;
     }
 
-
-    public static void main(String[] args) {
-
-
-        System.out.println(toLong(toBytes(1l, 6)));
-        System.out.println(toLong(toBytes(10l, 6)));
-        System.out.println(toLong(toBytes(100l, 6)));
-        System.out.println(toLong(toBytes(1000l, 6)));
-        System.out.println(toLong(toBytes(10000l, 6)));
-        System.out.println(toLong(toBytes(100000l, 6)));
-        System.out.println(toLong(toBytes(1000000l, 6)));
-        System.out.println(toLong(toBytes(10000000l, 6)));
-        System.out.println(toLong(toBytes(100000000l, 6)));
-        System.out.println(toLong(toBytes(1000000000l, 6)));
-        System.out.println(toLong(toBytes(10000000000l, 6)));
-
-
-        System.out.println(toLong(toBytes(1000000l, 6)));
-
+    public static void shiftBytesLeft(byte[] bytes, int positions) {
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] <<= positions;
+            if (i < bytes.length - 1) {
+                bytes[i] |= ((bytes[i + 1] & 0xFF) >> (Byte.SIZE - positions));
+            }
+        }
     }
 
+    public static void shiftBytesRight(byte[] bytes, int positions) {
+        for (int i = bytes.length - 1; i >= 0; i--) {
+          // System.out.println(toBinaryString(bytes[i]));
+            bytes[i] = (byte)((bytes[i] & 0xFF) >> positions);
+            //System.out.println(toBinaryString(bytes[i]));
+            if (i > 0) {
 
-    static void print(byte[] bytes) {
-        for (int i = 0; i < bytes.length; i++) {
-            //System.out.print(String.format("%08s ", bytes[i]));
-            System.out.print(Integer.toBinaryString(bytes[i]));
-            System.out.print(" ");
+                bytes[i] |= (bytes[i - 1] << (Byte.SIZE - positions));
+              //  System.out.println(toBinaryString( bytes[i]));
+            }
         }
-        System.out.println();
     }
 
     public static int validate(int value, int min, int max) {
@@ -79,10 +65,52 @@ public class Utils {
         return value;
     }
 
-    public static long validate(long value, long min, long max) {
-        if (value < min || value > max) {
-            throw new RuntimeException("Value exceeds limits (value: " + value + ", min: " + min + ", max: " + max + ")");
-        }
-        return value;
+    public static void main(String[] args) {
+
+        final String s = "Hallo Harald";
+
+        byte[] bytes = s.getBytes();
+
+        print(bytes);
+        shiftBytesLeft(bytes, 2);
+        System.out.println(new String(bytes));
+        print(bytes);
+        shiftBytesRight(bytes, 2);
+        print(bytes);
+        System.out.println(new String(bytes));
+
+
+        System.out.println(toInt(toBytes(1, 6)));
+        System.out.println(toInt(toBytes(10, 6)));
+        System.out.println(toInt(toBytes(100, 6)));
+        System.out.println(toInt(toBytes(1000, 6)));
+        System.out.println(toInt(toBytes(10000, 6)));
+        System.out.println(toInt(toBytes(100000, 6)));
+        System.out.println(toInt(toBytes(1000000, 6)));
+        System.out.println(toInt(toBytes(10000000, 6)));
+        System.out.println(toInt(toBytes(100000000, 6)));
+        System.out.println(toInt(toBytes(1000000000, 6)));
     }
+
+    private static void print(byte[] bytes) {
+        for (int i = 0; i < bytes.length; i++) {
+            System.out.print(toBinaryString(bytes[i]) + " ");
+        }
+        System.out.println();
+    }
+
+    private static String toBinaryString(byte b) {
+        String s = "";
+        s += (b & 0b10000000) > 0 ? "1" : "0";
+        s += (b & 0b01000000) > 0 ? "1" : "0";
+        s += (b & 0b00100000) > 0 ? "1" : "0";
+        s += (b & 0b00010000) > 0 ? "1" : "0";
+        s += (b & 0b00001000) > 0 ? "1" : "0";
+        s += (b & 0b00000100) > 0 ? "1" : "0";
+        s += (b & 0b00000010) > 0 ? "1" : "0";
+        s += (b & 0b00000001) > 0 ? "1" : "0";
+        return s;
+    }
+
+
 }
