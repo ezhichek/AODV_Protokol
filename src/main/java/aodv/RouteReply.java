@@ -90,17 +90,17 @@ public class RouteReply {
 
         input.readFully(tmp);
         final int block1 = toInt(tmp);
-        final int lifeTime = (int)((block1 >> 6) & 0x3FFFF);
+        final int lifeTime = (block1 >> 6) & 0x3FFFF;
 
         input.readFully(tmp);
         final int block2 = toInt(tmp);
-        final int destinationAddress = (int)((block2 >> 8) & 0xFFFF);
-        final int destinationSequence = (int)(block2 & 0xFF);
+        final int destinationAddress = (block2 >> 8) & 0xFFFF;
+        final int destinationSequence = block2 & 0xFF;
 
         input.readFully(tmp);
         final int block3 = toInt(tmp);
-        final int originatorAddress = (int)((block3 >> 8) & 0xFFFF);
-        final int hopCount = (int)(block3 & 0xFF);
+        final int originatorAddress = (block3 >> 8) & 0xFFFF;
+        final int hopCount = block3 & 0xFF;
 
         return new RouteReply(lifeTime, destinationAddress, destinationSequence, originatorAddress, hopCount);
     }

@@ -101,18 +101,18 @@ public class RouteRequest {
 
         input.readFully(tmp);
         final int block1 = toInt(tmp);
-        final int hopCount = (int)((block1 >> 6) & 0x3F);
-        final int requestId = (int)(block1  & 0x3F);
+        final int hopCount = (block1 >> 6) & 0x3F;
+        final int requestId = block1 & 0x3F;
 
         input.readFully(tmp);
         final int block2 = toInt(tmp);
-        final int destinationAddress = (int)((block2 >> 8) & 0xFFFF);
-        final int destinationSequence = (int)(block2 & 0xFF);
+        final int destinationAddress = (block2 >> 8) & 0xFFFF;
+        final int destinationSequence = block2 & 0xFF;
 
         input.readFully(tmp);
         final int block3 = toInt(tmp);
-        final int originatorAddress = (int)((block3 >> 8) & 0xFFFF);
-        final int originatorSequence = (int)(block3 & 0xFF);
+        final int originatorAddress = (block3 >> 8) & 0xFFFF;
+        final int originatorSequence = block3 & 0xFF;
 
         return new RouteRequest(hopCount, requestId, destinationAddress, destinationSequence, originatorAddress, originatorSequence);
     }

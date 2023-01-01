@@ -66,7 +66,7 @@ public class UserData {
 
         input.readFully(tmp);
         final int block1 = toInt(tmp);
-        final int destinationAddress = (int)((block1 >> 2) & 0xFFFF);
+        final int destinationAddress = (block1 >> 2) & 0xFFFF;
 
         //Todo: read user data
 

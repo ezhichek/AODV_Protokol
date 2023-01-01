@@ -13,93 +13,93 @@ public class Router {
 
     private int sequenceNumber;
 
-    public void handleRouteRequest(RouteRequest request) {
+    public void processRouteRequest(RouteRequest request, int previousHopAddress) {
 
-        /*
-        When a node receives a RREQ, it first creates or updates a route to
-        the previous hop without a valid sequence number (see section 6.2)
-        */
-        createOrUpdateReverseRoute(request);
+        // Create or update route to the previous hop without a valid Sequence Number.
+        createRouteToPreviousHop(previousHopAddress);
 
-        /*
-        then checks to determine whether it has received a RREQ with the same
-        Originator IP Address and RREQ ID within at least the last
-        PATH_DISCOVERY_TIME.  If such a RREQ has been received, the node
-        silently discards the newly received RREQ.  The rest of this
-        subsection describes actions taken for RREQs that are not discarded.
-        */
+        // Discard, if we have seen this RREQ before.
         if (isEcho(request)) {
             return;
         }
 
         receivedRequests.put(request.getRequestId(), request.getOriginatorAddress());
 
+        // Increment the Hop Count on the RREQ.
+        // -> we are doing this in forwardRouteRequest and createOrUpdateReverseRoute
+
+        // Search for reverse route with matching Originator Address.
+        // If none exists, create a new one or update the current.
+        createOrUpdateReverseRoute(request, previousHopAddress);
+
+        // If we are the Destination Address or do have a valid route, generate a RREP else forward the RREQ.
         if (hasReachedDestination(request)) {
 
-            generateRouteReplyFromDestination(request);
+            generateRouteReplyFromDestination(request.getOriginatorAddress(), request.getDestinationAddress(), request.getDestinationSequence());
 
         } else if (hasValidRoute(request)) {
 
-            generateRouteReplyFromIntermediateNode(request);
+            generateRouteReplyFromIntermediateNode(request.getOriginatorAddress(), request.getDestinationAddress(), previousHopAddress);
 
         } else {
 
-            forwardRouteRequest(request);
+            broadcastRouteRequest(request);
         }
     }
 
-    private void createOrUpdateReverseRoute(RouteRequest request) {
+    private void createRouteToPreviousHop(int previousHopAddress) {
 
-        /*
-        When a node receives an AODV control packet from a neighbor, or
-        creates or updates a route for a particular destination or subnet, it
-        checks its route table for an entry for the destination.  In the
-        event that there is no corresponding entry for that destination, an
-        entry is created.  The sequence number is either determined from the
-        information contained in the control packet, or else the valid
-        sequence number field is set to false.  The route is only updated if
-        the new sequence number is either
-
-            (i)     higher than the destination sequence number in the route
-                    table, or
-
-            (ii)    the sequence numbers are equal, but the hop count (of the
-                    new information) plus one, is smaller than the existing hop
-                    count in the routing table, or
-
-            (iii)   the sequence number is unknown.
-
-        The Lifetime field of the routing table entry is either determined
-        from the control packet, or it is initialized to
-        ACTIVE_ROUTE_TIMEOUT.  This route may now be used to send any queued
-        data packets and fulfills any outstanding route requests.
-        */
-
-        Route route = routes.get(request.getOriginatorAddress());
+        Route route = routes.get(previousHopAddress);
 
         if (route == null) {
 
             route = new Route();
-            route.setDestinationAddress(request.getDestinationAddress());
-            route.setDestinationSequenceNumber(request.getOriginatorSequence());
+            route.setDestinationAddress(previousHopAddress);
+            route.setDestinationSequenceNumber(0);
             route.setHopCount(1);
-            route.setNextHop(request.getOriginatorAddress());
+            route.setNextHop(previousHopAddress);
             route.setLifetime(Constants.ACTIVE_ROUTE_TIMEOUT);
-            route.setValid(true);
-            route.addPrecursor(request.getOriginatorAddress());
+            route.setValid(false);
 
-            routes.put(request.getDestinationAddress(), route);
-
-        } else if (request.getOriginatorSequence() > route.getDestinationSequenceNumber()) {
-
-            route.setDestinationSequenceNumber(request.getOriginatorSequence());
+            routes.put(previousHopAddress, route);
         }
     }
 
     private boolean isEcho(RouteRequest request) {
+        // Check if we have seen the RREQ before (compare RREQ_ID and Originator Address).
         final Integer origAddr = receivedRequests.get(request.getRequestId());
         return origAddr == request.getOriginatorAddress();
     }
+
+    private void createOrUpdateReverseRoute(RouteRequest request, int previousHopAddress) {
+
+        // Increment the Hop Count on the RREQ.
+        final int hopCount = request.getHopCount() + 1;
+
+        final Route route = routes.computeIfAbsent(request.getOriginatorAddress(), k -> new Route());
+
+        // The originator's address becomes the new destination address
+        route.setDestinationAddress(request.getOriginatorAddress());
+
+        // Set the Sequence Number to the max of (Destination Sequence Number of the route, Originator Sequence Number of the RREQ)
+        route.setDestinationSequenceNumber(Math.max(route.getDestinationSequenceNumber(), request.getOriginatorSequence()));
+
+        // The valid sequence number field is set to true;
+        route.setValid(true);
+
+        // the next hop in the routing table becomes the node from which the RREQ was received
+        route.setNextHop(previousHopAddress);
+
+        // Set the Hop Count from the RREQ's Hop Count + 1.
+        route.setHopCount(hopCount);
+
+        // Whenever a RREQ message is received, the Lifetime of the reverse route entry for the Originator IP address is set to be the maximum of
+        // (ExistingLifetime, MinimalLifetime), where
+        // MinimalLifetime = (current time + 2 * NET_TRAVERSAL_TIME - 2 * HopCount * NODE_TRAVERSAL_TIME).
+        final long minLifetime = System.currentTimeMillis() + 2 * Constants.NET_TRAVERSAL_TIME - 2 * hopCount * Constants.NODE_TRAVERSAL_TIME;
+        route.setLifetime(Math.max(route.getLifetime(), minLifetime));
+    }
+
 
     private boolean hasReachedDestination(RouteRequest request) {
         return request.getDestinationAddress() == address;
@@ -118,150 +118,53 @@ public class Router {
         return route != null && route.isValid() && route.getDestinationSequenceNumber() >= request.getOriginatorSequence();
     }
 
-    private void generateRouteReplyFromDestination(RouteRequest request) {
+    private void generateRouteReplyFromDestination(int originatorAddress, int destinationAddress, int destinationSequence) {
 
-        /*
-        If the generating node is the destination itself, it MUST increment
-        its own sequence number by one if the sequence number in the RREQ
-        packet is equal to that incremented value.  Otherwise, the
-        destination does not change its sequence number before generating the
-        RREP message.
-        */
-        if (request.getDestinationSequence() == sequenceNumber + 1) {
+        // Set Hop Count to 0.
+        final int hopCount = 0;
+
+        // Set Lifetime to the default MY_ROUTE_TIMEOUT.
+        final int lifetime = Constants.MY_ROUTE_TIMEOUT;
+
+        // If our own incremented sequence number (Sequence Number + 1) matches the Destination Sequence Number,
+        // persist the incremented value, otherwise don't change it.
+        if (destinationSequence == sequenceNumber + 1) {
             sequenceNumber++;
         }
 
-        /*
-        The destination node places its (perhaps newly
-        incremented) sequence number into the Destination Sequence Number
-        field of the RREP, and enters the value zero in the Hop Count field
-        of the RREP.
-        */
+        // Set the Destination Sequence Number in the RREP to own sequence number.
         final int destinationSequenceNumber = sequenceNumber;
-        final int hopCount = 0;
 
-        /*
-        The destination node copies the value MY_ROUTE_TIMEOUT (see section
-        10) into the Lifetime field of the RREP.  Each node MAY reconfigure
-        its value for MY_ROUTE_TIMEOUT, within mild constraints (see section
-        10).
-        */
-        final int lifetime = Constants.MY_ROUTE_TIMEOUT;
-
-        /*
-        When generating a RREP message, a node copies the Destination IP
-        Address and the Originator Sequence Number from the RREQ message into
-        the corresponding fields in the RREP message.
-        */
-        final RouteReply reply = new RouteReply(lifetime, request.getDestinationAddress(), destinationSequenceNumber, request.getOriginatorAddress(), hopCount);
+        final RouteReply reply = new RouteReply(lifetime, destinationAddress, destinationSequenceNumber, originatorAddress, hopCount);
     }
 
-    private void generateRouteReplyFromIntermediateNode(RouteRequest request) {
+    private void generateRouteReplyFromIntermediateNode(int originatorAddress, int destinationAddress, int previousHopAddress) {
 
-        final Route forwardRoute = routes.get(request.getDestinationAddress());
-        final Route reverseRoute = routes.get(request.getOriginatorAddress());
+        final Route forwardRoute = routes.get(destinationAddress);
+        final Route reverseRoute = routes.get(originatorAddress);
 
-        /*
-        If the node generating the RREP is not the destination node, but
-        instead is an intermediate hop along the path from the originator to
-        the destination, it copies its known sequence number for the
-        destination into the Destination Sequence Number field in the RREP
-        message.
-        */
+        // Set Destination Sequence Number to value of sequence number from the forward route.
         final int destinationSequenceNumber = forwardRoute.getDestinationSequenceNumber();
 
-        /*
-        The intermediate node updates the forward route entry by placing the
-        last hop node (from which it received the RREQ, as indicated by the
-        source IP address field in the IP header) into the precursor list for
-        the forward route entry -- i.e., the entry for the Destination IP
-        Address.
-        */
-        forwardRoute.addPrecursor(request.getOriginatorAddress());
+        // Add the RREQ's sender to the Precursor-list of the forward route.
+        forwardRoute.addPrecursor(previousHopAddress);
 
-        /*
-        The intermediate node also updates its route table entry
-        for the node originating the RREQ by placing the next hop towards the
-        destination in the precursor list for the reverse route entry --
-        i.e., the entry for the Originator IP Address field of the RREQ
-        message data.
-        */
+        // Add Next Hop from the forward route to the Precursor-list of the route to the Originator Adress of the RREQ (reverse route).
         reverseRoute.addPrecursor(forwardRoute.getNextHop());
 
-        /*
-        The intermediate node places its distance in hops from the
-        destination (indicated by the hop count in the routing table) Count
-        field in the RREP.
-        */
+        // Set Hop Count in RREP to the value in the route to the Destination Adress of the RREP (forward route).
         final int hopCount = forwardRoute.getHopCount();
 
-        /*
-        The Lifetime field of the RREP is calculated by
-        subtracting the current time from the expiration time in its route
-        table entry.
-        */
-        final int lifetime = forwardRoute.getLifetime() - 0; // System.currentTimeMillis();
+        // Set Lifetime in RREP to the difference between (forward Route Lifetime - Current Timestamp).
+        final int lifetime = (int)(forwardRoute.getLifetime() - System.currentTimeMillis());
 
-        /*
-        When generating a RREP message, a node copies the Destination IP
-        Address and the Originator Sequence Number from the RREQ message into (typo? means originator ip address?)
-        the corresponding fields in the RREP message.
-        */
-        final RouteReply reply = new RouteReply(lifetime, request.getDestinationAddress(), destinationSequenceNumber, request.getOriginatorAddress(), hopCount);
+        final RouteReply reply = new RouteReply(lifetime, destinationAddress, destinationSequenceNumber, originatorAddress, hopCount);
     }
 
-    private void forwardRouteRequest(RouteRequest receivedRequest) {
+    private void broadcastRouteRequest(RouteRequest receivedRequest) {
 
-        /*
-        First, it first increments the hop count value in the RREQ by one, to
-        account for the new hop through the intermediate node.
-        */
+        // Increment the Hop Count on the RREQ.
         final int hopCount = receivedRequest.getHopCount() + 1;
-
-        /*
-        Then the node searches for a reverse route to the Originator IP Address (see
-        section 6.2), using longest-prefix matching.
-        */
-        final Route reverseRoute = routes.get(receivedRequest.getOriginatorAddress());
-
-        /*
-        If need be, the route
-        is created, or updated using the Originator Sequence Number from the
-        RREQ in its routing table.  This reverse route will be needed if the
-        node receives a RREP back to the node that originated the RREQ
-        (identified by the Originator IP Address).
-        */
-
-
-
-        /*
-
-        When the reverse route is
-        created or updated, the following actions on the route are also
-        carried out:
-
-            1. the Originator Sequence Number from the RREQ is compared to the
-               corresponding destination sequence number in the route table entry
-               and copied if greater than the existing value there
-
-            2. the valid sequence number field is set to true;
-
-            3. the next hop in the routing table becomes the node from which the
-               RREQ was received (it is obtained from the source IP address in
-               the IP header and is often not equal to the Originator IP Address
-               field in the RREQ message);
-
-            4. the hop count is copied from the Hop Count in the RREQ message;
-
-        Whenever a RREQ message is received, the Lifetime of the reverse
-        route entry for the Originator IP address is set to be the maximum of
-        (ExistingLifetime, MinimalLifetime), where
-
-        MinimalLifetime =  (current time + 2*NET_TRAVERSAL_TIME - 2*HopCount*NODE_TRAVERSAL_TIME).
-
-        The current node can use the reverse route to forward data packets in
-        the same way as for any other route in the routing table.
-        */
 
         final RouteRequest forwardedRequest = new RouteRequest(
                 hopCount,
@@ -270,8 +173,6 @@ public class Router {
                 receivedRequest.getDestinationSequence(),
                 receivedRequest.getOriginatorAddress(),
                 receivedRequest.getOriginatorSequence());
-
-        //routeRequest.setPrevHopAddress(this.nodeAddress);
 
 
     }

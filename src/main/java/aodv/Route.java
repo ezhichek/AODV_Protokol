@@ -1,7 +1,9 @@
 package aodv;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Route {
 
@@ -13,11 +15,11 @@ public class Route {
 
     private int nextHop;
 
-    private int lifetime;
+    private long lifetime;
 
     private boolean valid;
 
-    private final List<Integer> precursors = new ArrayList<>();
+    private final Set<Integer> precursors = new LinkedHashSet<>();
 
     public int getDestinationAddress() {
         return destinationAddress;
@@ -51,11 +53,11 @@ public class Route {
         this.nextHop = nextHop;
     }
 
-    public int getLifetime() {
+    public long getLifetime() {
         return lifetime;
     }
 
-    public void setLifetime(int lifetime) {
+    public void setLifetime(long lifetime) {
         this.lifetime = lifetime;
     }
 
