@@ -53,6 +53,10 @@ public class RouteRequest {
         return originatorSequence;
     }
 
+    public RouteRequest incrementHopCount() {
+        return new RouteRequest(hopCount + 1, requestId, destinationAddress, destinationSequence, originatorAddress, originatorSequence);
+    }
+
     public byte[] serialize() throws IOException {
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();

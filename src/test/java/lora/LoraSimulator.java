@@ -1,7 +1,6 @@
 package lora;
 
 import aodv.RouteRequest;
-import aodv.Router;
 import com.fazecast.jSerialComm.SerialPort;
 import org.apache.commons.lang3.StringUtils;
 
@@ -14,7 +13,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-public class LoraNode extends DefaultSerialEventHandler {
+public class LoraSimulator extends DefaultSerialEventHandler {
 
     private static final String AT_OK = "AT,OK";
 
@@ -22,22 +21,22 @@ public class LoraNode extends DefaultSerialEventHandler {
     private static final String ERR_CMD = "ERR:CMD";
 
     private final Map<String, Function<String, String>> commands = new HashMap<>() {{
-        put("AT", LoraNode.this::onAt);
-        put("AT+RST", LoraNode.this::onRst);
-        put("AT+VER", LoraNode.this::onVer);
-        put("AT+IDLE", LoraNode.this::onIdle);
-        put("AT+SLEEP", LoraNode.this::onSleep);
-        put("AT+RX", LoraNode.this::onRx);
-        put("AT+RSSI?", LoraNode.this::onRssi);
-        put("AT+ADDR", LoraNode.this::onSetAddr);
-        put("AT+ADDR?", LoraNode.this::onGetAddr);
-        put("AT+DEST", LoraNode.this::onSetDest);
-        put("AT+DEST?", LoraNode.this::onGetDest);
-        put("AT+CFG", LoraNode.this::onCfg);
-        put("AT+SAVE", LoraNode.this::onSafe);
-        put("AT+SEND", LoraNode.this::onSend);
-        put("AT+PB0", LoraNode.this::onSetPb0);
-        put("AT+PB0?", LoraNode.this::onGetPb0);
+        put("AT", LoraSimulator.this::onAt);
+        put("AT+RST", LoraSimulator.this::onRst);
+        put("AT+VER", LoraSimulator.this::onVer);
+        put("AT+IDLE", LoraSimulator.this::onIdle);
+        put("AT+SLEEP", LoraSimulator.this::onSleep);
+        put("AT+RX", LoraSimulator.this::onRx);
+        put("AT+RSSI?", LoraSimulator.this::onRssi);
+        put("AT+ADDR", LoraSimulator.this::onSetAddr);
+        put("AT+ADDR?", LoraSimulator.this::onGetAddr);
+        put("AT+DEST", LoraSimulator.this::onSetDest);
+        put("AT+DEST?", LoraSimulator.this::onGetDest);
+        put("AT+CFG", LoraSimulator.this::onCfg);
+        put("AT+SAVE", LoraSimulator.this::onSafe);
+        put("AT+SEND", LoraSimulator.this::onSend);
+        put("AT+PB0", LoraSimulator.this::onSetPb0);
+        put("AT+PB0?", LoraSimulator.this::onGetPb0);
     }};
 
     private SerialConnector connector = null;
@@ -49,8 +48,6 @@ public class LoraNode extends DefaultSerialEventHandler {
     private int pb0;
 
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-
-    private final Router router = new Router();
 
     public void start() {
         final Scanner scanner = new Scanner(System.in);
@@ -222,7 +219,7 @@ public class LoraNode extends DefaultSerialEventHandler {
     }
 
     public static void main(String[] args) {
-        new LoraNode().start();
+        new LoraSimulator().start();
     }
 
 }

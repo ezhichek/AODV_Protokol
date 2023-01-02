@@ -1,15 +1,13 @@
 package aodv;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 public class Route {
 
     private int destinationAddress;
 
-    private int destinationSequenceNumber;
+    private int destinationSequence;
 
     private int hopCount;
 
@@ -29,12 +27,12 @@ public class Route {
         this.destinationAddress = destinationAddress;
     }
 
-    public int getDestinationSequenceNumber() {
-        return destinationSequenceNumber;
+    public int getDestinationSequence() {
+        return destinationSequence;
     }
 
-    public void setDestinationSequenceNumber(int destinationSequenceNumber) {
-        this.destinationSequenceNumber = destinationSequenceNumber;
+    public void setDestinationSequence(int destinationSequence) {
+        this.destinationSequence = destinationSequence;
     }
 
     public int getHopCount() {

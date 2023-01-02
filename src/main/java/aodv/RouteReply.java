@@ -46,6 +46,10 @@ public class RouteReply {
         return hopCount;
     }
 
+    public RouteReply incrementHopCount() {
+        return new RouteReply(lifetime, destinationAddress, destinationSequence, originatorAddress, hopCount + 1);
+    }
+
     public byte[] serialize() throws IOException {
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();

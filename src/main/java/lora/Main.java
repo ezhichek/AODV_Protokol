@@ -6,7 +6,7 @@ import java.util.Scanner;
 
 public class Main {
 
-    public static void main(String[] args) {
+    private void start() {
 
         final SerialPort[] availablePorts = SerialPort.getCommPorts();
 
@@ -44,11 +44,15 @@ public class Main {
                 return;
             }
             try {
-                connector.sendCommand(command.toUpperCase());
+                connector.sendCommand(command);
             } catch (Exception e) {
                 System.out.println("Failed to send command: " + e.getMessage());
                 connector = null;
             }
         }
+    }
+
+    public static void main(String[] args) {
+        new Main().start();
     }
 }
