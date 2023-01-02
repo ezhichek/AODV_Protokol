@@ -39,12 +39,13 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
     }
 
     public String sendMessage(String message) {
-        if (message.startsWith("AT+ADDR")) {
-            final int address = Integer.parseInt(StringUtils.substringAfter(message, "="), 16);
-            router.setAddress(address);
-        }
         try {
-            return commandExecutor.submit(() -> sendAndAwaitResponse(message)).get();
+            final String response = commandExecutor.submit(() -> sendAndAwaitResponse(message)).get();
+            if (message.startsWith("AT+ADDR?")) {
+                final int address = Integer.parseInt(StringUtils.substringAfter(response, "="), 16);
+                router.setAddress(address);
+            }
+            return response;
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
@@ -108,6 +109,11 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
     }
 
     private void handleAsyncMessage(String message) {
+
+        if (router.getAddress() == 0) {
+            System.out.println("Router is not initialized. Execute AT+ADDR? once!");
+            return;
+        }
 
         final String[] parts = StringUtils.split(message, ',');
 
