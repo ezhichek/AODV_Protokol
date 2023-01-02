@@ -5,17 +5,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import static aodv.Utils.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class AodvRouterImpl implements AodvRouter {
 
-    private final int address;
+    private int address;
 
-    private final MessageSender messageSender;
+    private final RoutingCallback routingCallback;
 
     private final Map<Integer, Integer> receivedRequests = new HashMap<>();
 
@@ -25,11 +23,16 @@ public class AodvRouterImpl implements AodvRouter {
 
     private int requestId = 0;
 
-    private ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    public AodvRouterImpl(int address, MessageSender messageSender) {
+    public AodvRouterImpl(int address, RoutingCallback routingCallback) {
         this.address = address;
-        this.messageSender = messageSender;
+        this.routingCallback = routingCallback;
+    }
+
+    @Override
+    public void setAddress(int address) {
+        this.address = address;
     }
 
     @Override
@@ -66,7 +69,7 @@ public class AodvRouterImpl implements AodvRouter {
                     0                                                                                                           // Set Hop Count to 0.
             );
 
-            messageSender.send(reply, prevHop);
+            routingCallback.send(reply, prevHop);
 
         } else if (hasValidRoute(request)) {
 
@@ -85,11 +88,11 @@ public class AodvRouterImpl implements AodvRouter {
                     forwardRoute.getHopCount()                                                                                  // Set Hop Count in RREP to the value in the route to the Destination Adress of the RREP (forward route).
             );
 
-            messageSender.send(reply, prevHop);
+            routingCallback.send(reply, prevHop);
 
         } else {
 
-            messageSender.send(request, BROADCAST_ADDRESS);
+            routingCallback.send(request, BROADCAST_ADDRESS);
         }
     }
 
@@ -121,19 +124,19 @@ public class AodvRouterImpl implements AodvRouter {
 
             final Route reverseRoute = routes.get(reply.getOriginatorAddress());                                                // Then the node consults its route table entry for the originating node to determine the next hop for the RREP
 
-            messageSender.send(reply, reverseRoute.getNextHop());                                                               // And then forwards the RREP towards the originator using the information in that route table entry
+            routingCallback.send(reply, reverseRoute.getNextHop());                                                             // And then forwards the RREP towards the originator using the information in that route table entry
         }
     }
 
     @Override
-    public void processUserData(UserData data, int prevHop, Consumer<String> errorHandler) {
-        processUserData(data, prevHop, errorHandler, 0);
+    public void processUserData(UserData data, int prevHop) {
+        processUserData(data, prevHop, 0);
     }
 
-    private void processUserData(UserData data, int prevHop, Consumer<String> errorHandler, int retries) {
+    private void processUserData(UserData data, int prevHop, int retries) {
 
         if (retries > RREQ_RETRIES) {
-            errorHandler.accept("Destination unreachable");
+            routingCallback.onError("Destination unreachable");
             return;
         }
 
@@ -150,10 +153,10 @@ public class AodvRouterImpl implements AodvRouter {
                     ++sequenceNumber                                                                                            // Set the RREQ Originator Sequence Number to the own sequence number, after it has been incremented for this step.
             );
 
-            messageSender.send(request, BROADCAST_ADDRESS);                                                                     // Send route request
+            routingCallback.send(request, BROADCAST_ADDRESS);                                                                   // Send route request
 
             final long delay = (long)Math.pow(2, retries) * NET_TRAVERSAL_TIME;
-            scheduler.schedule(() -> processUserData(data, prevHop, errorHandler, retries + 1), delay, MILLISECONDS);           // Buffer data
+            scheduler.schedule(() -> processUserData(data, prevHop, retries + 1), delay, MILLISECONDS);                         // Buffer data
             return;
         }
 
@@ -171,7 +174,7 @@ public class AodvRouterImpl implements AodvRouter {
             routeToNextHop.setLifetime(Math.max(routeToNextHop.getLifetime(), newLifetime));
         }
 
-        messageSender.send(data, forwardRoute.getNextHop());
+        routingCallback.send(data, forwardRoute.getNextHop());
     }
 
     private void createRouteToPreviousHop(int previousHopAddress) {
