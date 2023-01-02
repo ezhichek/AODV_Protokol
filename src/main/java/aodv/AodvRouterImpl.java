@@ -31,6 +31,11 @@ public class AodvRouterImpl implements AodvRouter {
     }
 
     @Override
+    public int getAddress() {
+        return address;
+    }
+
+    @Override
     public void setAddress(int address) {
         this.address = address;
     }

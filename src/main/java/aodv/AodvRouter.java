@@ -2,6 +2,8 @@ package aodv;
 
 public interface AodvRouter {
 
+    int getAddress();
+
     void setAddress(int address);
 
     void processRouteRequest(RouteRequest request, int prevHop);

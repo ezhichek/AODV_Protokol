@@ -8,20 +8,20 @@ public class Main {
 
     private void start() {
 
-        SerialConnector connector = null;
+        LoraNode node = null;
 
         final Scanner scanner = new Scanner(System.in);
 
         while (true) {
-            if (connector == null) {
+            if (node == null) {
                 System.out.print("Please enter port or press 0 to quit: ");
                 final String s = scanner.nextLine();
                 if (s.trim().equals("0")) {
                     return;
                 }
-                connector = new SerialConnector(SerialPort.getCommPort(s));
+                node = new LoraNode(SerialPort.getCommPort(s));
                 try {
-                    connector.connect();
+                    node.connect();
                 } catch (Exception e) {
                     System.out.println("Failed to connect to port: " + e.getMessage());
                     continue;
@@ -32,10 +32,11 @@ public class Main {
                 return;
             }
             try {
-                connector.sendCommand(command);
+                final String response = node.sendMessage(command);
+                System.out.println(response);
             } catch (Exception e) {
                 System.out.println("Failed to send command: " + e.getMessage());
-                connector = null;
+                node = null;
             }
         }
     }

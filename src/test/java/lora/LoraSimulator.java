@@ -58,7 +58,7 @@ public class LoraSimulator extends DefaultSerialEventHandler {
                 if (s.trim().equals("0")) {
                     return;
                 }
-                connector = new SerialConnector(SerialPort.getCommPort(s), this);
+                connector = new SerialConnector(SerialPort.getCommPort(s), new DefaultSerialEventHandler());
                 try {
                     connector.connect();
                 } catch (Exception e) {

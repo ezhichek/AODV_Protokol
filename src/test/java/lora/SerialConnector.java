@@ -12,10 +12,6 @@ public class SerialConnector implements SerialPortDataListener {
 
     private final SerialEventHandler eventHandler;
 
-    public SerialConnector(SerialPort port) {
-        this(port, new DefaultSerialEventHandler());
-    }
-
     public SerialConnector(SerialPort port, SerialEventHandler eventHandler) {
         this.port = port;
         this.eventHandler = eventHandler;
