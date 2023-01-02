@@ -38,7 +38,7 @@ public class AodvRouterImpl implements AodvRouter {
 
         final Route reverseRoute = routes.computeIfAbsent(request.getOriginatorAddress(), Route::new);                          // Search for reverse route with matching Originator Address. If none exists, create a new one or update the current.
         reverseRoute.setDestinationSequence(Math.max(reverseRoute.getDestinationSequence(), request.getOriginatorSequence()));  // The Originator Sequence Number from the RREQ is compared to the corresponding destination sequence number in the route table entry and copied if greater than the existing value there
-        reverseRoute.setDestinationSequenceValid(true);                                                                         // the valid sequence number field is set to true
+        reverseRoute.setDestinationSequenceValid(true);                                                                         // The valid sequence number field is set to true
         reverseRoute.setNextHop(previousHopAddress);                                                                            // The next hop in the routing table becomes the node from which the RREQ was received
         reverseRoute.setHopCount(request.getHopCount());                                                                        // The hop count is copied from the Hop Count in the RREQ message
         reverseRoute.setLifetime(Math.max(reverseRoute.getLifetime(), minLifetime(request.getHopCount())));                     // The Lifetime of the reverse route entry for the Originator IP address is set to be the maximum of (ExistingLifetime, MinimalLifetime)
