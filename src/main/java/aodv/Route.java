@@ -5,9 +5,11 @@ import java.util.Set;
 
 public class Route {
 
-    private int destinationAddress;
+    private final int destinationAddress;
 
     private int destinationSequence;
+
+    private boolean validDestinationSequence;
 
     private int hopCount;
 
@@ -15,16 +17,16 @@ public class Route {
 
     private long lifetime;
 
-    private boolean valid;
+    private boolean active;
 
     private final Set<Integer> precursors = new LinkedHashSet<>();
 
-    public int getDestinationAddress() {
-        return destinationAddress;
+    public Route(int destinationAddress) {
+        this.destinationAddress = destinationAddress;
     }
 
-    public void setDestinationAddress(int destinationAddress) {
-        this.destinationAddress = destinationAddress;
+    public int getDestinationAddress() {
+        return destinationAddress;
     }
 
     public int getDestinationSequence() {
@@ -33,6 +35,14 @@ public class Route {
 
     public void setDestinationSequence(int destinationSequence) {
         this.destinationSequence = destinationSequence;
+    }
+
+    public boolean isValidDestinationSequence() {
+        return validDestinationSequence;
+    }
+
+    public void setValidDestinationSequence(boolean validDestinationSequence) {
+        this.validDestinationSequence = validDestinationSequence;
     }
 
     public int getHopCount() {
@@ -59,15 +69,15 @@ public class Route {
         this.lifetime = lifetime;
     }
 
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
     public void addPrecursor(int precursor) {
         precursors.add(precursor);
-    }
-
-    public boolean isValid() {
-        return valid;
-    }
-
-    public void setValid(boolean valid) {
-        this.valid = valid;
     }
 }
