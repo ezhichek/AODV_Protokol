@@ -38,7 +38,7 @@ public class AodvRouterImpl implements AodvRouter {
 
         final Route reverseRoute = routes.computeIfAbsent(request.getOriginatorAddress(), Route::new);                          // Search for reverse route with matching Originator Address. If none exists, create a new one or update the current.
         reverseRoute.setDestinationSequence(Math.max(reverseRoute.getDestinationSequence(), request.getOriginatorSequence()));  // The Originator Sequence Number from the RREQ is compared to the corresponding destination sequence number in the route table entry and copied if greater than the existing value there
-        reverseRoute.setValidDestinationSequence(true);                                                                         // the valid sequence number field is set to true
+        reverseRoute.setDestinationSequenceValid(true);                                                                         // the valid sequence number field is set to true
         reverseRoute.setNextHop(previousHopAddress);                                                                            // The next hop in the routing table becomes the node from which the RREQ was received
         reverseRoute.setHopCount(request.getHopCount());                                                                        // The hop count is copied from the Hop Count in the RREQ message
         reverseRoute.setLifetime(Math.max(reverseRoute.getLifetime(), minLifetime(request.getHopCount())));                     // The Lifetime of the reverse route entry for the Originator IP address is set to be the maximum of (ExistingLifetime, MinimalLifetime)
@@ -92,16 +92,16 @@ public class AodvRouterImpl implements AodvRouter {
         reply = reply.incrementHopCount();                                                                                      // Increment Hop Count in RREP.
 
         final Route forwardRoute = routes.computeIfAbsent(reply.getDestinationAddress(), Route::new);                           // Search for reverse route with matching Originator Address. If none exists, create a new one or update the current
-        if (!forwardRoute.isValidDestinationSequence()                                                                          // The sequence number in the routing table is marked as invalid in route table entry
+        if (!forwardRoute.isDestinationSequenceValid()                                                                          // The sequence number in the routing table is marked as invalid in route table entry
                 || ((reply.getDestinationSequence()  > forwardRoute.getDestinationSequence())
-                    && forwardRoute.isValidDestinationSequence())                                                               // The Destination Sequence Number in the RREP is greater than the node's copy of the destination sequence number and the known value is valid
+                    && forwardRoute.isDestinationSequenceValid())                                                               // The Destination Sequence Number in the RREP is greater than the node's copy of the destination sequence number and the known value is valid
                 || ((reply.getDestinationSequence() == forwardRoute.getDestinationSequence())
                     && !forwardRoute.isActive())                                                                                // The sequence numbers are the same, but the route is marked as inactive
                 || ((reply.getDestinationSequence() == forwardRoute.getDestinationSequence())
                     && reply.getHopCount() < forwardRoute.getHopCount()))                                                       // The sequence numbers are the same, and the New Hop Count is smaller than the hop count in route table entry
         {
             forwardRoute.setActive(true);                                                                                       // The route is marked as active
-            forwardRoute.setValidDestinationSequence(true);                                                                     // The destination sequence number is marked as valid
+            forwardRoute.setDestinationSequenceValid(true);                                                                     // The destination sequence number is marked as valid
             forwardRoute.setNextHop(previousHopAddress);                                                                        // The next hop in the route entry is assigned to be the node from which the RREP is received
             forwardRoute.setHopCount(reply.getHopCount());                                                                      // The hop count is set to the value of the New Hop Count
             forwardRoute.setLifetime(System.currentTimeMillis() + reply.getLifetime());                                         // The expiry time is set to the current time plus the value of the Lifetime in the RREP message
@@ -125,17 +125,17 @@ public class AodvRouterImpl implements AodvRouter {
             route.setHopCount(1);
             route.setNextHop(previousHopAddress);
             route.setLifetime(ACTIVE_ROUTE_TIMEOUT);
-            route.setValidDestinationSequence(false);
+            route.setDestinationSequenceValid(false);
 
             routes.put(previousHopAddress, route);
         }
     }
 
     private boolean hasValidRoute(RouteRequest request) {
-        final Route route = routes.get(request.getDestinationAddress());
-        return route != null && route.isActive()                                                                                // An active route to the destination exists
-                && route.isValidDestinationSequence()                                                                           // And the destination sequence in the route for the destination is valid
-                && route.getDestinationSequence() >= request.getOriginatorSequence();                                           // And the destination sequence in the route is greater than or equal to the destination sequence of the RREQ
+        final Route forwardRoute = routes.get(request.getDestinationAddress());
+        return forwardRoute != null && forwardRoute.isActive()                                                                  // An active route to the destination exists
+                && forwardRoute.isDestinationSequenceValid()                                                                    // And the destination sequence in the route for the destination is valid
+                && forwardRoute.getDestinationSequence() >= request.getOriginatorSequence();                                    // And the destination sequence in the route is greater than or equal to the destination sequence of the RREQ
     }
 
     private static long minLifetime(int hopCount) {

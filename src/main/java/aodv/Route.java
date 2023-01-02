@@ -9,7 +9,7 @@ public class Route {
 
     private int destinationSequence;
 
-    private boolean validDestinationSequence;
+    private boolean destinationSequenceValid;
 
     private int hopCount;
 
@@ -37,12 +37,12 @@ public class Route {
         this.destinationSequence = destinationSequence;
     }
 
-    public boolean isValidDestinationSequence() {
-        return validDestinationSequence;
+    public boolean isDestinationSequenceValid() {
+        return destinationSequenceValid;
     }
 
-    public void setValidDestinationSequence(boolean validDestinationSequence) {
-        this.validDestinationSequence = validDestinationSequence;
+    public void setDestinationSequenceValid(boolean destinationSequenceValid) {
+        this.destinationSequenceValid = destinationSequenceValid;
     }
 
     public int getHopCount() {
