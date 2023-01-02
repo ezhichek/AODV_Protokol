@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 import static aodv.Utils.*;
 
-public class UserData {
+public class UserData implements Message {
 
     private static final int TYPE = 0;
 

@@ -4,7 +4,7 @@ import java.io.*;
 
 import static aodv.Utils.*;
 
-public class RouteRequest {
+public class RouteRequest implements Message {
 
     private static final int TYPE = 1;
 
@@ -16,15 +16,18 @@ public class RouteRequest {
 
     private final int destinationSequence;
 
+    private final boolean destinationSequenceUnknown;
+
     private final int originatorAddress;
 
     private final int originatorSequence;
 
-    public RouteRequest(int hopCount, int requestId, int destinationAddress, int destinationSequence, int originatorAddress, int originatorSequence) {
+    public RouteRequest(int hopCount, int requestId, int destinationAddress, int destinationSequence, boolean destinationSequenceUnknown, int originatorAddress, int originatorSequence) {
         this.hopCount = validate(hopCount, 0, MAX_6_BITS);
         this.requestId =  validate(requestId, 0, MAX_6_BITS);
         this.destinationAddress = validate(destinationAddress, 0, MAX_16_BITS);
         this.destinationSequence = validate(destinationSequence, 0, MAX_8_BITS);
+        this.destinationSequenceUnknown = destinationSequenceUnknown;
         this.originatorAddress = validate(originatorAddress, 0, MAX_16_BITS);
         this.originatorSequence = validate(originatorSequence, 0, MAX_8_BITS);
     }
@@ -45,6 +48,10 @@ public class RouteRequest {
         return destinationSequence;
     }
 
+    public boolean isDestinationSequenceUnknown() {
+        return destinationSequenceUnknown;
+    }
+
     public int getOriginatorAddress() {
         return originatorAddress;
     }
@@ -54,7 +61,7 @@ public class RouteRequest {
     }
 
     public RouteRequest incrementHopCount() {
-        return new RouteRequest(hopCount + 1, requestId, destinationAddress, destinationSequence, originatorAddress, originatorSequence);
+        return new RouteRequest(hopCount + 1, requestId, destinationAddress, destinationSequence, destinationSequenceUnknown, originatorAddress, originatorSequence);
     }
 
     public byte[] serialize() throws IOException {
@@ -67,7 +74,9 @@ public class RouteRequest {
         // type - 6 bits
         block1 |= (TYPE & INT_MASK) << 18;
         // flags - 6 bits
-        // block1 |= (flags & INT_MASK) << 12;
+        if (destinationSequenceUnknown) {
+            block1 |= (1 & INT_MASK) << 17;
+        }
         // hop count - 6 bits
         block1 |= (hopCount & INT_MASK) << 6;
         // request id - 6 bits
@@ -105,6 +114,7 @@ public class RouteRequest {
 
         input.readFully(tmp);
         final int block1 = toInt(tmp);
+        final boolean destinationSequenceUnknown = ((block1 >> 17) & 0x1) == 1;
         final int hopCount = (block1 >> 6) & 0x3F;
         final int requestId = block1 & 0x3F;
 
@@ -118,7 +128,7 @@ public class RouteRequest {
         final int originatorAddress = (block3 >> 8) & 0xFFFF;
         final int originatorSequence = block3 & 0xFF;
 
-        return new RouteRequest(hopCount, requestId, destinationAddress, destinationSequence, originatorAddress, originatorSequence);
+        return new RouteRequest(hopCount, requestId, destinationAddress, destinationSequence, destinationSequenceUnknown, originatorAddress, originatorSequence);
     }
 
     public static boolean isRouteRequest(byte[] bytes) {
@@ -128,8 +138,11 @@ public class RouteRequest {
     public static void main(String[] args) throws IOException {
 
 
-        RouteRequest request = new RouteRequest(MAX_6_BITS, MAX_6_BITS, MAX_16_BITS, MAX_8_BITS, MAX_16_BITS, MAX_8_BITS);
+        RouteRequest request = new RouteRequest(MAX_6_BITS, MAX_6_BITS, MAX_16_BITS, MAX_8_BITS, true, MAX_16_BITS, MAX_8_BITS);
         RouteRequest request1 = parse(request.serialize());
+
+        request = new RouteRequest(MAX_6_BITS, MAX_6_BITS, MAX_16_BITS, MAX_8_BITS, false, MAX_16_BITS, MAX_8_BITS);
+        request1 = parse(request.serialize());
 
         request.serialize();
 

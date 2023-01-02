@@ -2,6 +2,6 @@ package aodv;
 
 public interface MessageSender {
 
-    void sendMessage(int address, byte[] data);
+    void send(Message message, int destination);
 
 }

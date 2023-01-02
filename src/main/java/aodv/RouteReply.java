@@ -4,7 +4,7 @@ import java.io.*;
 
 import static aodv.Utils.*;
 
-public class RouteReply {
+public class RouteReply implements Message {
 
     private static final int TYPE = 2;
 
