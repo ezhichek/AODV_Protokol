@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static aodv.Utils.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class AodvRouterImpl implements AodvRouter {
 
@@ -152,7 +153,7 @@ public class AodvRouterImpl implements AodvRouter {
             messageSender.send(request, BROADCAST_ADDRESS);                                                                     // Send route request
 
             final long delay = (long)Math.pow(2, retries) * NET_TRAVERSAL_TIME;
-            scheduler.schedule(() -> processUserData(data, prevHop, errorHandler, retries + 1), delay, TimeUnit.MILLISECONDS);  // Buffer data
+            scheduler.schedule(() -> processUserData(data, prevHop, errorHandler, retries + 1), delay, MILLISECONDS);           // Buffer data
             return;
         }
 
