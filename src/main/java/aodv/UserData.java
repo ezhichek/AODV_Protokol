@@ -44,7 +44,7 @@ public class UserData implements Message {
         output.write(toBytes(block1, 3));
 
         if (data != null && data.length > 0) {
-            byte[] bytes = Arrays.copyOf(data, data.length);;
+            byte[] bytes = Arrays.copyOf(data, data.length);
             Utils.shiftBytesLeft(bytes, 2);
             output.write(bytes);
         }
@@ -54,23 +54,21 @@ public class UserData implements Message {
 
     public static UserData parse(byte[] bytes) throws IOException {
 
-        if (bytes.length != 9) {
-            throw new RuntimeException("'Failed to parse request: Invalid length (" + bytes.length + ")");
-        }
-
         final ByteArrayInputStream in = new ByteArrayInputStream(bytes);
 
         final DataInput input = new DataInputStream(in);
 
-        byte[] tmp = new byte[3];
+        final byte[] tmp = new byte[3];
 
         input.readFully(tmp);
         final int block1 = toInt(tmp);
         final int destinationAddress = (block1 >> 2) & 0xFFFF;
 
-        //Todo: read user data
+        final byte[] data = new byte[bytes.length - 3];
+        input.readFully(data);
+        Utils.shiftBytesRight(data, 2);
 
-        return new UserData(destinationAddress, null);
+        return new UserData(destinationAddress, data);
     }
 
     public static boolean isUserData(byte[] bytes) {
