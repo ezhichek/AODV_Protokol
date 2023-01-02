@@ -103,8 +103,10 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
     private void receiveMessage(String message) {
         if (message.startsWith("LR")) {
             handleAsyncMessage(message);
-        } else {
+        } else if (message.startsWith("AT")) {
             handleResponse(message);
+        } else {
+            System.out.println("Unexpected message: " + message);
         }
     }
 
