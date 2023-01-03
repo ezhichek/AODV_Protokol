@@ -37,7 +37,7 @@ public class UserData implements Message {
         block1 |= (TYPE & INT_MASK) << 18;
         // destination address - 16 bits
         block1 |= (destinationAddress & INT_MASK) << 2;
-        // user data - first 2 bits (idiots!!!!!)
+        // user data - first 2 bits
         if (data != null && data.length > 0) {
             block1 |= data[0] >> 6;
         }
@@ -65,13 +65,27 @@ public class UserData implements Message {
         final int destinationAddress = (block1 >> 2) & 0xFFFF;
 
         final byte[] data = new byte[bytes.length - 3];
-        input.readFully(data);
-        Utils.shiftBytesRight(data, 2);
+        if (data.length > 0) {
+            input.readFully(data);
+            Utils.shiftBytesRight(data, 2);
+            // user data - first 2 bits
+            data[0] |= block1 << 6;
+        }
 
         return new UserData(destinationAddress, data);
     }
 
     public static boolean isUserData(byte[] bytes) {
         return ((bytes[0] >> 2) & 0xFF) == TYPE;
+    }
+
+    public static void main(String[] args) throws IOException {
+
+
+        final UserData ud1 = new UserData(1234, "Hallo Harald".getBytes());
+        final UserData ud2 = UserData.parse(ud1.serialize());
+
+        System.out.println();
+
     }
 }
