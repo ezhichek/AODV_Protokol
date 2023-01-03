@@ -1,5 +1,8 @@
 package aodv;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import java.io.*;
 import java.util.Arrays;
 
@@ -24,6 +27,14 @@ public class UserData implements Message {
 
     public byte[] getData() {
         return data;
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+                .append("destinationAddress", destinationAddress)
+                .append("data-length", data != null ? data.length : 0)
+                .toString();
     }
 
     public byte[] serialize() throws IOException {

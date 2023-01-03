@@ -50,19 +50,17 @@ public class LoraSimulator extends DefaultSerialEventHandler {
 
     public void start() {
         final Scanner scanner = new Scanner(System.in);
-        while (true) {
-            if (connector == null) {
-                System.out.print("Please enter port or press 0 to quit: ");
-                final String s = scanner.nextLine();
-                if (s.trim().equals("0")) {
-                    return;
-                }
-                connector = new SerialConnector(SerialPort.getCommPort(s), this);
-                try {
-                    connector.connect();
-                } catch (Exception e) {
-                    System.out.println("Failed to connect to port: " + e.getMessage());
-                }
+        while (connector == null) {
+            System.out.print("Please enter port or press 0 to quit: ");
+            final String s = scanner.nextLine();
+            if (s.trim().equals("0")) {
+                return;
+            }
+            connector = new SerialConnector(SerialPort.getCommPort(s), this);
+            try {
+                connector.connect();
+            } catch (Exception e) {
+                System.out.println("Failed to connect to port: " + e.getMessage());
             }
         }
     }

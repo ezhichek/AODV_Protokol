@@ -12,4 +12,5 @@ public interface AodvRouter {
 
     void processUserData(UserData data, int prevHop);
 
+    void printRoutes();
 }

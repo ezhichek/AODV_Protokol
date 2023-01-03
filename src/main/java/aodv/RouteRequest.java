@@ -1,5 +1,8 @@
 package aodv;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import java.io.*;
 
 import static aodv.Utils.*;
@@ -62,6 +65,19 @@ public class RouteRequest implements Message {
 
     public RouteRequest incrementHopCount() {
         return new RouteRequest(hopCount + 1, requestId, destinationAddress, destinationSequence, destinationSequenceUnknown, originatorAddress, originatorSequence);
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+                .append("hopCount", hopCount)
+                .append("requestId", requestId)
+                .append("destinationAddress", destinationAddress)
+                .append("destinationSequence", destinationSequence)
+                .append("destinationSequenceUnknown", destinationSequenceUnknown)
+                .append("originatorAddress", originatorAddress)
+                .append("originatorSequence", originatorSequence)
+                .toString();
     }
 
     public byte[] serialize() throws IOException {

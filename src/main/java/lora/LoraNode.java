@@ -57,15 +57,10 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
                 lastResponse = null;
                 port.getOutputStream().write((message + "\r\n").getBytes());
                 port.getOutputStream().flush();
-                while (lastResponse == null) {
-                    lock.wait(10000);
-                }
+                awaitResponse();
                 if (lastResponse != null && lastResponse.startsWith("AT,SENDING")) {
-                    System.out.println(lastResponse);
                     lastResponse = null;
-                    while (lastResponse == null) {
-                        lock.wait(10000);
-                    }
+                    awaitResponse();
                 }
                 return lastResponse;
             }
@@ -73,6 +68,13 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
             return "Failed to send message: " + e.getMessage();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void awaitResponse() throws InterruptedException {
+        final long timeout = System.currentTimeMillis() + 10000;
+        while (lastResponse == null && System.currentTimeMillis() < timeout) {
+            lock.wait(100);
         }
     }
 
@@ -127,25 +129,28 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
 
             if (UserData.isUserData(bytes)) {
 
-                System.out.println("Received user data");
                 final UserData data = UserData.parse(bytes);
+                System.out.println("< " + data);
                 if (data.getDestinationAddress() == router.getAddress()) {
                     System.out.println(new String(data.getData()));
                 } else {
                     router.processUserData(data, address);
+                    router.printRoutes();
                 }
 
             } else if (RouteRequest.isRouteRequest(bytes)) {
 
-                System.out.println("Received route request");
                 final RouteRequest request = RouteRequest.parse(bytes);
+                System.out.println("< " + request);
                 router.processRouteRequest(request, address);
+                router.printRoutes();
 
             } else if (RouteReply.isRouteReply(bytes)) {
 
-                System.out.println("Received route reply");
                 final RouteReply reply = RouteReply.parse(bytes);
+                System.out.println("< " + reply);
                 router.processRouteReply(reply, address);
+                router.printRoutes();
 
             } else {
 
@@ -158,6 +163,7 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
     }
 
     private void handleResponse(String message) {
+        System.out.println("< " + message);
         synchronized (lock) {
             lastResponse = message;
             lock.notifyAll();
@@ -173,23 +179,24 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
             final String messageStr = Base64.getEncoder().encodeToString(bytes);
 
             String response = sendMessage("AT+DEST=" + String.format("%04X", destination));
-            System.out.println(response);
-            if (response == null || !response.startsWith("AT,OK")) {
+            if (!isAtOk(response)) {
                 return;
             }
 
             response = sendMessage("AT+SEND=" + String.format("%02X", messageStr.length()));
-            System.out.println(response);
-            if (response == null || !response.startsWith("AT,OK")) {
+            if (!isAtOk(response)) {
                 return;
             }
 
-            response = sendMessage(messageStr);
-            System.out.println(response);
+            sendMessage(messageStr);
 
         } catch (IOException e) {
             System.out.println("Failed to send message: " + e.getMessage());
         }
+    }
+
+    private boolean isAtOk(String response) {
+        return response != null && response.startsWith("AT,OK");
     }
 
     @Override

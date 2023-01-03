@@ -1,5 +1,8 @@
 package aodv;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -79,5 +82,19 @@ public class Route {
 
     public void addPrecursor(int precursor) {
         precursors.add(precursor);
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+                .append("destinationAddress", destinationAddress)
+                .append("destinationSequence", destinationSequence)
+                .append("destinationSequenceValid", destinationSequenceValid)
+                .append("hopCount", hopCount)
+                .append("nextHop", nextHop)
+                .append("lifetime", lifetime)
+                .append("active", active)
+                .append("precursors", precursors)
+                .toString();
     }
 }

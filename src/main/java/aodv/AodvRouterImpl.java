@@ -1,6 +1,7 @@
 package aodv;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executors;
@@ -17,7 +18,7 @@ public class AodvRouterImpl implements AodvRouter {
 
     private final Map<Integer, Integer> receivedRequests = new HashMap<>();
 
-    private final Map<Integer, Route> routes = new HashMap<>();
+    private final Map<Integer, Route> routes = new LinkedHashMap<>();
 
     private int sequenceNumber = 0;
 
@@ -122,7 +123,8 @@ public class AodvRouterImpl implements AodvRouter {
             forwardRoute.setNextHop(prevHop);                                                                                   // The next hop in the route entry is assigned to be the node from which the RREP is received
             forwardRoute.setHopCount(reply.getHopCount());                                                                      // The hop count is set to the value of the New Hop Count
             forwardRoute.setLifetime(System.currentTimeMillis() + reply.getLifetime());                                         // The expiry time is set to the current time plus the value of the Lifetime in the RREP message
-            forwardRoute.setDestinationSequence(reply.getDestinationSequence());                                                // The destination sequence number is the Destination Sequence Number in the RREP message
+            forwardRoute.setDestinationSequence(reply.getDestinationSequence());
+            // The destination sequence number is the Destination Sequence Number in the RREP message
         }
 
         if (reply.getOriginatorAddress() != address) {                                                                          // If the current node is NOT the node indicated by the Originator IP Address in the RREP message
@@ -205,6 +207,28 @@ public class AodvRouterImpl implements AodvRouter {
 
     private static long minLifetime(int hopCount) {
         return System.currentTimeMillis() + 2 * NET_TRAVERSAL_TIME - 2L * hopCount * NODE_TRAVERSAL_TIME;
+    }
+
+    @Override
+    public void printRoutes() {
+        final StringBuilder b = new StringBuilder();
+        b.append("+--------------------------------------------------+\n");
+        b.append("| Addr | Seq | V | A | Hops | Next |      Lifetime |\n");
+        b.append("+--------------------------------------------------+\n");
+        routes.values().forEach(r -> b.append(formatRoute(r)));
+        b.append("+--------------------------------------------------+\n");
+        System.out.print(b);
+    }
+
+    private static String formatRoute(Route r) {
+        return String.format("| %04X | %3s | %s | %s | %4s | %04X | %d |",
+                r.getDestinationAddress(),
+                r.getDestinationSequence(),
+                r.isDestinationSequenceValid() ? "t" : "f",
+                r.isActive() ? "t" : "f",
+                r.getHopCount(),
+                r.getNextHop(),
+                r.getLifetime());
     }
 
 }

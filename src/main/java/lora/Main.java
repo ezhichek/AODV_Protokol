@@ -8,12 +8,6 @@ public class Main {
 
     private void start() {
 
-        final SerialPort[] availablePorts = SerialPort.getCommPorts();
-
-        for (int i = 0; i < availablePorts.length; i++) {
-            System.out.println("(" + (i + 1) + ") " + availablePorts[i].getDescriptivePortName());
-        }
-
         LoraNode node = null;
 
         final Scanner scanner = new Scanner(System.in);
@@ -33,13 +27,13 @@ public class Main {
                     continue;
                 }
             }
+            System.out.print("> ");
             final String command = scanner.nextLine();
             if (command.equals("0")) {
                 return;
             }
             try {
-                final String response = node.sendMessage(command);
-                System.out.println(response);
+                node.sendMessage(command);
             } catch (Exception e) {
                 System.out.println("Failed to send command: " + e.getMessage());
                 node = null;

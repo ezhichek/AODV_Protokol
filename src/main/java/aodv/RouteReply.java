@@ -1,5 +1,8 @@
 package aodv;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import java.io.*;
 
 import static aodv.Utils.*;
@@ -48,6 +51,17 @@ public class RouteReply implements Message {
 
     public RouteReply incrementHopCount() {
         return new RouteReply(lifetime, destinationAddress, destinationSequence, originatorAddress, hopCount + 1);
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+                .append("lifetime", lifetime)
+                .append("destinationAddress", destinationAddress)
+                .append("destinationSequence", destinationSequence)
+                .append("originatorAddress", originatorAddress)
+                .append("hopCount", hopCount)
+                .toString();
     }
 
     public byte[] serialize() throws IOException {
@@ -112,4 +126,5 @@ public class RouteReply implements Message {
     public static boolean isRouteReply(byte[] bytes) {
         return ((bytes[0] >> 2) & 0xFF) == TYPE;
     }
+
 }
