@@ -1,6 +1,5 @@
 package lora;
 
-import aodv.RouteRequest;
 import com.fazecast.jSerialComm.SerialPort;
 import org.apache.commons.lang3.StringUtils;
 
@@ -58,7 +57,7 @@ public class LoraSimulator extends DefaultSerialEventHandler {
                 if (s.trim().equals("0")) {
                     return;
                 }
-                connector = new SerialConnector(SerialPort.getCommPort(s), new DefaultSerialEventHandler());
+                connector = new SerialConnector(SerialPort.getCommPort(s), this);
                 try {
                     connector.connect();
                 } catch (Exception e) {
@@ -73,18 +72,13 @@ public class LoraSimulator extends DefaultSerialEventHandler {
         System.out.println("Received " + bytes.length + " bytes");
         try {
             connector.sendCommand("AT,SENDING");
-            if (RouteRequest.isRouteRequest(bytes)) {
-
-            }
-
-
-
             connector.sendCommand("AT,SENDED");
         } catch (IOException e) {
             System.out.println("Failed to send reply 'SENDING/SENDED': " + e.getMessage());
         }
     }
 
+    @Override
     protected void handleCommand(String command) {
         System.out.print("Received command: " + command);
         final String commandName = StringUtils.substringBefore(command, "=");

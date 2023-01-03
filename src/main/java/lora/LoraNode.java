@@ -58,13 +58,13 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
                 port.getOutputStream().write((message + "\r\n").getBytes());
                 port.getOutputStream().flush();
                 while (lastResponse == null) {
-                    wait();
+                    lock.wait();
                 }
                 if (lastResponse.startsWith("AT,SENDING")) {
                     System.out.println(lastResponse);
                     lastResponse = null;
                     while (lastResponse == null) {
-                        wait();
+                        lock.wait();
                     }
                 }
                 return lastResponse;
