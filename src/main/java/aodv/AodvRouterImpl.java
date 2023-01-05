@@ -1,5 +1,6 @@
 package aodv;
 
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -15,6 +16,8 @@ public class AodvRouterImpl implements AodvRouter {
     private int address;
 
     private final RoutingCallback routingCallback;
+    
+    private final Clock clock;
 
     private final Map<Integer, Integer> receivedRequests = new HashMap<>();
 
@@ -26,9 +29,9 @@ public class AodvRouterImpl implements AodvRouter {
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    public AodvRouterImpl(int address, RoutingCallback routingCallback) {
-        this.address = address;
+    public AodvRouterImpl(RoutingCallback routingCallback, Clock clock) {
         this.routingCallback = routingCallback;
+        this.clock = clock;
     }
 
     @Override
@@ -84,7 +87,7 @@ public class AodvRouterImpl implements AodvRouter {
             forwardRoute.addPrecursor(prevHop);                                                                                 // Add the RREQ's sender to the Precursor-list of the forward route.
             reverseRoute.addPrecursor(forwardRoute.getNextHop());                                                               // Add Next Hop from the forward route to the Precursor-list of the route to the Originator Adress of the RREQ (reverse route).
 
-            final int lifetime = (int)(forwardRoute.getLifetime() - System.currentTimeMillis());                                // Set Lifetime in RREP to the difference between (forward Route Lifetime - Current Timestamp).
+            final int lifetime = (int)(forwardRoute.getLifetime() - clock.millis());                                            // Set Lifetime in RREP to the difference between (forward Route Lifetime - Current Timestamp).
 
             final RouteReply reply = new RouteReply(
                     lifetime,
@@ -122,7 +125,7 @@ public class AodvRouterImpl implements AodvRouter {
             forwardRoute.setDestinationSequenceValid(true);                                                                     // The destination sequence number is marked as valid
             forwardRoute.setNextHop(prevHop);                                                                                   // The next hop in the route entry is assigned to be the node from which the RREP is received
             forwardRoute.setHopCount(reply.getHopCount());                                                                      // The hop count is set to the value of the New Hop Count
-            forwardRoute.setLifetime(System.currentTimeMillis() + reply.getLifetime());                                         // The expiry time is set to the current time plus the value of the Lifetime in the RREP message
+            forwardRoute.setLifetime(clock.millis() + reply.getLifetime());                                                     // The expiry time is set to the current time plus the value of the Lifetime in the RREP message
             forwardRoute.setDestinationSequence(reply.getDestinationSequence());
             // The destination sequence number is the Destination Sequence Number in the RREP message
         }
@@ -167,7 +170,7 @@ public class AodvRouterImpl implements AodvRouter {
             return;
         }
 
-        final long newLifetime = System.currentTimeMillis() + ACTIVE_ROUTE_TIMEOUT;
+        final long newLifetime = clock.millis() + ACTIVE_ROUTE_TIMEOUT;
 
         forwardRoute.setLifetime(Math.max(forwardRoute.getLifetime(), newLifetime));
 
@@ -202,11 +205,11 @@ public class AodvRouterImpl implements AodvRouter {
         final Route forwardRoute = routes.get(request.getDestinationAddress());
         return forwardRoute != null && forwardRoute.isActive()                                                                  // An active route to the destination exists
                 && forwardRoute.isDestinationSequenceValid()                                                                    // And the destination sequence in the route for the destination is valid
-                && forwardRoute.getDestinationSequence() >= request.getOriginatorSequence();                                    // And the destination sequence in the route is greater than or equal to the destination sequence of the RREQ
+                && forwardRoute.getDestinationSequence() >= request.getDestinationSequence();                                   // And the destination sequence in the route is greater than or equal to the destination sequence of the RREQ
     }
 
-    private static long minLifetime(int hopCount) {
-        return System.currentTimeMillis() + 2 * NET_TRAVERSAL_TIME - 2L * hopCount * NODE_TRAVERSAL_TIME;
+    private long minLifetime(int hopCount) {
+        return clock.millis() + 2 * NET_TRAVERSAL_TIME - 2L * hopCount * NODE_TRAVERSAL_TIME;
     }
 
     @Override

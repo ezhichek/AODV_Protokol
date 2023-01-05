@@ -1,5 +1,7 @@
 package aodv;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -27,6 +29,29 @@ public class UserData implements Message {
 
     public byte[] getData() {
         return data;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        UserData userData = (UserData)o;
+        return new EqualsBuilder()
+                .append(destinationAddress, userData.destinationAddress)
+                .append(data, userData.data)
+                .isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37)
+                .append(destinationAddress)
+                .append(data)
+                .toHashCode();
     }
 
     @Override

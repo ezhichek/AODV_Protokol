@@ -1,5 +1,7 @@
 package aodv;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -51,6 +53,35 @@ public class RouteReply implements Message {
 
     public RouteReply incrementHopCount() {
         return new RouteReply(lifetime, destinationAddress, destinationSequence, originatorAddress, hopCount + 1);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        RouteReply reply = (RouteReply)o;
+        return new EqualsBuilder()
+                .append(lifetime, reply.lifetime)
+                .append(destinationAddress, reply.destinationAddress)
+                .append(destinationSequence, reply.destinationSequence)
+                .append(originatorAddress, reply.originatorAddress)
+                .append(hopCount, reply.hopCount)
+                .isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37)
+                .append(lifetime)
+                .append(destinationAddress)
+                .append(destinationSequence)
+                .append(originatorAddress)
+                .append(hopCount)
+                .toHashCode();
     }
 
     @Override

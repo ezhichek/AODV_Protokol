@@ -1,5 +1,7 @@
 package aodv;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -65,6 +67,40 @@ public class RouteRequest implements Message {
 
     public RouteRequest incrementHopCount() {
         return new RouteRequest(hopCount + 1, requestId, destinationAddress, destinationSequence, destinationSequenceUnknown, originatorAddress, originatorSequence);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        RouteRequest request = (RouteRequest)o;
+
+        return new EqualsBuilder()
+                .append(hopCount, request.hopCount)
+                .append(requestId, request.requestId)
+                .append(destinationAddress, request.destinationAddress)
+                .append(destinationSequence, request.destinationSequence)
+                .append(destinationSequenceUnknown, request.destinationSequenceUnknown)
+                .append(originatorAddress, request.originatorAddress)
+                .append(originatorSequence, request.originatorSequence)
+                .isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37)
+                .append(hopCount)
+                .append(requestId)
+                .append(destinationAddress)
+                .append(destinationSequence)
+                .append(destinationSequenceUnknown)
+                .append(originatorAddress)
+                .append(originatorSequence)
+                .toHashCode();
     }
 
     @Override

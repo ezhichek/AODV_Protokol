@@ -7,6 +7,7 @@ import com.fazecast.jSerialComm.SerialPortEvent;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.Base64;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -16,7 +17,7 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
 
     private final SerialPort port;
 
-    private final AodvRouter router = new AodvRouterImpl(0, this);
+    private final AodvRouter router = new AodvRouterImpl(this, Clock.systemDefaultZone());
 
     private final StringBuilder messageBuilder = new StringBuilder();
 
