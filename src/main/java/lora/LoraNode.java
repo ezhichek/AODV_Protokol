@@ -134,10 +134,9 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
                 System.out.println("< " + data);
                 if (data.getDestinationAddress() == router.getAddress()) {
                     System.out.println(new String(data.getData()));
-                } else {
-                    router.processUserData(data, address);
-                    router.printRoutes();
                 }
+                router.processUserData(data, address);
+                router.printRoutes();
 
             } else if (RouteRequest.isRouteRequest(bytes)) {
 

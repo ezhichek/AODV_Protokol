@@ -126,8 +126,7 @@ public class AodvRouterImpl implements AodvRouter {
             forwardRoute.setNextHop(prevHop);                                                                                   // The next hop in the route entry is assigned to be the node from which the RREP is received
             forwardRoute.setHopCount(reply.getHopCount());                                                                      // The hop count is set to the value of the New Hop Count
             forwardRoute.setLifetime(clock.millis() + reply.getLifetime());                                                     // The expiry time is set to the current time plus the value of the Lifetime in the RREP message
-            forwardRoute.setDestinationSequence(reply.getDestinationSequence());
-            // The destination sequence number is the Destination Sequence Number in the RREP message
+            forwardRoute.setDestinationSequence(reply.getDestinationSequence());                                                // The destination sequence number is the Destination Sequence Number in the RREP message
         }
 
         if (reply.getOriginatorAddress() != address) {                                                                          // If the current node is NOT the node indicated by the Originator IP Address in the RREP message

@@ -229,6 +229,110 @@ class AodvRouterSpec extends Specification {
             true   | true                     | 10                  | false
     }
 
+    def "route reply is forwarded to next hop if current node is not the destination"() {
+
+        given:
+
+            def replyIn = new RouteReply(
+                    4000,               // lifetime
+                    HOP_5,              // destinationAddress
+                    10,                 // destinationSequence
+                    HOP_1,              // originatorAddress
+                    1                   // hopCount
+            )
+
+            def replyOut = new RouteReply(
+                    4000,               // lifetime
+                    HOP_5,              // destinationAddress
+                    10,                 // destinationSequence
+                    HOP_1,              // originatorAddress
+                    2                   // hopCount
+            )
+
+            def routeToPrevHop = new Route(HOP_4)
+            routeToPrevHop.destinationSequence = 0
+            routeToPrevHop.destinationSequenceValid = false
+            routeToPrevHop.hopCount = 1
+            routeToPrevHop.nextHop = HOP_4
+            routeToPrevHop.lifetime = ACTIVE_ROUTE_TIMEOUT
+            routeToPrevHop.active = false
+
+            def reverseRoute = new Route(HOP_1)
+            reverseRoute.destinationSequence = 2
+            reverseRoute.destinationSequenceValid = true
+            reverseRoute.hopCount = 2
+            reverseRoute.nextHop = HOP_2
+            reverseRoute.lifetime = clock.millis() + 2 * NET_TRAVERSAL_TIME - 2L * 2 * NODE_TRAVERSAL_TIME
+            reverseRoute.active = false
+            putRoute(reverseRoute)
+
+            def forwardRoute = new Route(HOP_5)
+            forwardRoute.destinationSequence = 10
+            forwardRoute.destinationSequenceValid = true
+            forwardRoute.hopCount = 2
+            forwardRoute.nextHop = HOP_4
+            forwardRoute.lifetime = clock.millis() + 4000
+            forwardRoute.active = true
+
+        when:
+
+            router.processRouteReply(replyIn, HOP_4)
+
+        then:
+
+            1 * callback.send(replyOut, HOP_2)
+            getRoute(HOP_4) == routeToPrevHop
+            getRoute(HOP_5) == forwardRoute
+    }
+
+    def "route reply is consumed if current node is the destination"() {
+
+        given:
+
+            def replyIn = new RouteReply(
+                    4000,               // lifetime
+                    HOP_5,              // destinationAddress
+                    10,                 // destinationSequence
+                    HOP_1,              // originatorAddress
+                    1                   // hopCount
+            )
+
+            def routeToPrevHop = new Route(HOP_4)
+            routeToPrevHop.destinationSequence = 0
+            routeToPrevHop.destinationSequenceValid = false
+            routeToPrevHop.hopCount = 1
+            routeToPrevHop.nextHop = HOP_4
+            routeToPrevHop.lifetime = ACTIVE_ROUTE_TIMEOUT
+            routeToPrevHop.active = false
+
+            def reverseRoute = new Route(HOP_1)
+            reverseRoute.destinationSequence = 2
+            reverseRoute.destinationSequenceValid = true
+            reverseRoute.hopCount = 2
+            reverseRoute.nextHop = HOP_2
+            reverseRoute.lifetime = clock.millis() + 2 * NET_TRAVERSAL_TIME - 2L * 2 * NODE_TRAVERSAL_TIME
+            reverseRoute.active = false
+            putRoute(reverseRoute)
+
+            def forwardRoute = new Route(HOP_5)
+            forwardRoute.destinationSequence = 10
+            forwardRoute.destinationSequenceValid = true
+            forwardRoute.hopCount = 2
+            forwardRoute.nextHop = HOP_4
+            forwardRoute.lifetime = clock.millis() + 4000
+            forwardRoute.active = true
+
+        when:
+
+            router.processRouteReply(replyIn, HOP_4)
+
+        then:
+
+            1 * callback.send(_, _)
+            getRoute(HOP_4) == routeToPrevHop
+            getRoute(HOP_5) == forwardRoute
+    }
+
     def putRoute(Route route) {
         router.routes.put(route.destinationAddress, route)
     }
