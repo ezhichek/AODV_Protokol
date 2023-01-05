@@ -8,6 +8,8 @@ import java.time.Instant
 import java.time.ZoneId
 
 import static aodv.Utils.MY_ROUTE_TIMEOUT
+import static aodv.Utils.NET_TRAVERSAL_TIME
+import static aodv.Utils.NODE_TRAVERSAL_TIME
 
 class AodvRouterSpec extends Specification {
 
@@ -54,6 +56,23 @@ class AodvRouterSpec extends Specification {
                     HOP_1,              // originatorAddress
                     0                   // hopCount
             )
+
+            def routeToPrevHop = new Route(HOP_2)
+            routeToPrevHop.destinationSequence = 0
+            routeToPrevHop.destinationSequenceValid = false
+            routeToPrevHop.hopCount = 1
+            routeToPrevHop.nextHop = HOP_2
+            routeToPrevHop.lifetime = Utils.ACTIVE_ROUTE_TIMEOUT
+            routeToPrevHop.active = false
+
+            def reverseRoute = new Route(HOP_1)
+            reverseRoute.destinationSequence = 2
+            reverseRoute.destinationSequenceValid = true
+            reverseRoute.hopCount = 2
+            reverseRoute.nextHop = HOP_2
+            reverseRoute.lifetime = clock.millis() + 2 * NET_TRAVERSAL_TIME - 2L * 2 * NODE_TRAVERSAL_TIME
+            reverseRoute.active = false
+
         when:
 
             router.processRouteRequest(req, HOP_2)
@@ -61,12 +80,16 @@ class AodvRouterSpec extends Specification {
         then:
 
             1 * callback.send(reply, HOP_2)
+            routeToPrevHop == getRoute(HOP_2)
+            reverseRoute == getRoute(HOP_1)
 
         where:
+
             destinationSequence | ownSequence
             0                   | 0
             1                   | 1
             2                   | 0
+            3                   | 0
     }
 
     def "route reply from intermediate node is created if an active route exists"() {
@@ -98,8 +121,7 @@ class AodvRouterSpec extends Specification {
             route.nextHop = HOP_4
             route.lifetime = clock.millis() + 4000
             route.active = true
-
-            router.routes.put(HOP_5, route)
+            putRoute(route)
 
         when:
 
@@ -142,7 +164,7 @@ class AodvRouterSpec extends Specification {
                 route.nextHop = HOP_4
                 route.lifetime = clock.millis() + 4000
                 route.active = active
-                router.routes.put(HOP_5, route)
+                putRoute(route)
             }
 
         when:
@@ -160,6 +182,19 @@ class AodvRouterSpec extends Specification {
             true   | false                    | 10                  | true
             true   | true                     | 9                   | true
             true   | true                     | 10                  | false
+    }
+
+    def putRoute(Route route) {
+        router.routes.put(route.destinationAddress, route)
+    }
+
+    def getRoute(destinationAddress) {
+        router.routes.get(destinationAddress)
+    }
+
+    def hasRoute(Route route) {
+        def result = router.routes.get(route.destinationAddress)
+        return result != null && result.equals(route)
     }
 
 }

@@ -191,12 +191,12 @@ public class AodvRouterImpl implements AodvRouter {
         Route route = routes.get(previousHopAddress);
         if (route == null) {
             route = new Route(previousHopAddress);
-            route.setActive(true);
             route.setDestinationSequence(0);
             route.setDestinationSequenceValid(false);
             route.setHopCount(1);
             route.setNextHop(previousHopAddress);
             route.setLifetime(ACTIVE_ROUTE_TIMEOUT);
+            route.setActive(false);
             routes.put(previousHopAddress, route);
         }
     }

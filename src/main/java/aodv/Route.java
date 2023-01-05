@@ -1,5 +1,7 @@
 package aodv;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -82,6 +84,41 @@ public class Route {
 
     public void addPrecursor(int precursor) {
         precursors.add(precursor);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Route route = (Route)o;
+        return new EqualsBuilder()
+                .append(destinationAddress, route.destinationAddress)
+                .append(destinationSequence, route.destinationSequence)
+                .append(destinationSequenceValid, route.destinationSequenceValid)
+                .append(hopCount, route.hopCount)
+                .append(nextHop, route.nextHop)
+                .append(lifetime, route.lifetime)
+                .append(active, route.active)
+                .append(precursors, route.precursors)
+                .isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37)
+                .append(destinationAddress)
+                .append(destinationSequence)
+                .append(destinationSequenceValid)
+                .append(hopCount)
+                .append(nextHop)
+                .append(lifetime)
+                .append(active)
+                .append(precursors)
+                .toHashCode();
     }
 
     @Override
