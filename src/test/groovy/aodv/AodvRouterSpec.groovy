@@ -7,9 +7,7 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 
-import static aodv.Utils.MY_ROUTE_TIMEOUT
-import static aodv.Utils.NET_TRAVERSAL_TIME
-import static aodv.Utils.NODE_TRAVERSAL_TIME
+import static aodv.Utils.*
 
 class AodvRouterSpec extends Specification {
 
@@ -62,7 +60,7 @@ class AodvRouterSpec extends Specification {
             routeToPrevHop.destinationSequenceValid = false
             routeToPrevHop.hopCount = 1
             routeToPrevHop.nextHop = HOP_2
-            routeToPrevHop.lifetime = Utils.ACTIVE_ROUTE_TIMEOUT
+            routeToPrevHop.lifetime = ACTIVE_ROUTE_TIMEOUT
             routeToPrevHop.active = false
 
             def reverseRoute = new Route(HOP_1)
@@ -80,8 +78,8 @@ class AodvRouterSpec extends Specification {
         then:
 
             1 * callback.send(reply, HOP_2)
-            routeToPrevHop == getRoute(HOP_2)
-            reverseRoute == getRoute(HOP_1)
+            getRoute(HOP_2) == routeToPrevHop
+            getRoute(HOP_1) == reverseRoute
 
         where:
 
@@ -123,6 +121,32 @@ class AodvRouterSpec extends Specification {
             route.active = true
             putRoute(route)
 
+            def routeToPrevHop = new Route(HOP_2)
+            routeToPrevHop.destinationSequence = 0
+            routeToPrevHop.destinationSequenceValid = false
+            routeToPrevHop.hopCount = 1
+            routeToPrevHop.nextHop = HOP_2
+            routeToPrevHop.lifetime = ACTIVE_ROUTE_TIMEOUT
+            routeToPrevHop.active = false
+
+            def reverseRoute = new Route(HOP_1)
+            reverseRoute.destinationSequence = 2
+            reverseRoute.destinationSequenceValid = true
+            reverseRoute.hopCount = 2
+            reverseRoute.nextHop = HOP_2
+            reverseRoute.lifetime = clock.millis() + 2 * NET_TRAVERSAL_TIME - 2L * 2 * NODE_TRAVERSAL_TIME
+            reverseRoute.active = false
+            reverseRoute.addPrecursor(HOP_4)
+
+            def forwardRoute = new Route(HOP_5)
+            forwardRoute.destinationSequence = 10
+            forwardRoute.destinationSequenceValid = true
+            forwardRoute.hopCount = 2
+            forwardRoute.nextHop = HOP_4
+            forwardRoute.lifetime = clock.millis() + 4000
+            forwardRoute.active = true
+            forwardRoute.addPrecursor(HOP_2)
+
         when:
 
             router.processRouteRequest(req, HOP_2)
@@ -130,6 +154,9 @@ class AodvRouterSpec extends Specification {
         then:
 
             1 * callback.send(reply, HOP_2)
+            getRoute(HOP_2) == routeToPrevHop
+            getRoute(HOP_1) == reverseRoute
+            getRoute(HOP_5) == forwardRoute
     }
 
     def "route request is forwarded to broadcast address if no active route exists"() {
@@ -167,6 +194,22 @@ class AodvRouterSpec extends Specification {
                 putRoute(route)
             }
 
+            def routeToPrevHop = new Route(HOP_2)
+            routeToPrevHop.destinationSequence = 0
+            routeToPrevHop.destinationSequenceValid = false
+            routeToPrevHop.hopCount = 1
+            routeToPrevHop.nextHop = HOP_2
+            routeToPrevHop.lifetime = ACTIVE_ROUTE_TIMEOUT
+            routeToPrevHop.active = false
+
+            def reverseRoute = new Route(HOP_1)
+            reverseRoute.destinationSequence = 2
+            reverseRoute.destinationSequenceValid = true
+            reverseRoute.hopCount = 2
+            reverseRoute.nextHop = HOP_2
+            reverseRoute.lifetime = clock.millis() + 2 * NET_TRAVERSAL_TIME - 2L * 2 * NODE_TRAVERSAL_TIME
+            reverseRoute.active = false
+
         when:
 
             router.processRouteRequest(reqIn, HOP_2)
@@ -174,6 +217,8 @@ class AodvRouterSpec extends Specification {
         then:
 
             1 * callback.send(reqOut, BROADCAST)
+            getRoute(HOP_2) == routeToPrevHop
+            getRoute(HOP_1) == reverseRoute
 
         where:
 
@@ -190,11 +235,6 @@ class AodvRouterSpec extends Specification {
 
     def getRoute(destinationAddress) {
         router.routes.get(destinationAddress)
-    }
-
-    def hasRoute(Route route) {
-        def result = router.routes.get(route.destinationAddress)
-        return result != null && result.equals(route)
     }
 
 }
