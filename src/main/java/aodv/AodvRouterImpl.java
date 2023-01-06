@@ -147,13 +147,13 @@ public class AodvRouterImpl implements AodvRouter {
             return;
         }
 
-        if (retries > RREQ_RETRIES) {
-            routingCallback.onError("Destination unreachable");
-            return;
-        }
-
         final Route forwardRoute = routes.get(data.getDestinationAddress());
         if (forwardRoute == null || !isActive(forwardRoute)) {
+
+            if (retries > RREQ_RETRIES) {
+                routingCallback.onError("Destination unreachable");
+                return;
+            }
 
             final RouteRequest request = new RouteRequest(
                     0,                                                                                                          // Set the Hop Count value to 0.
