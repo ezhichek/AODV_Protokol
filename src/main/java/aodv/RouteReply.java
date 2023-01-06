@@ -139,7 +139,7 @@ public class RouteReply implements Message {
 
         input.readFully(tmp);
         final int block1 = toInt(tmp);
-        final int lifeTime = (block1 >> 6) & 0x3FFFF;
+        final int lifeTime = block1 & 0x3FFFF;
 
         input.readFully(tmp);
         final int block2 = toInt(tmp);

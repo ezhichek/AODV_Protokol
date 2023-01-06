@@ -187,17 +187,4 @@ public class RouteRequest implements Message {
         return ((bytes[0] >> 2) & 0xFF) == TYPE;
     }
 
-    public static void main(String[] args) throws IOException {
-
-
-        RouteRequest request = new RouteRequest(MAX_6_BITS, MAX_6_BITS, MAX_16_BITS, MAX_8_BITS, true, MAX_16_BITS, MAX_8_BITS);
-        RouteRequest request1 = parse(request.serialize());
-
-        request = new RouteRequest(MAX_6_BITS, MAX_6_BITS, MAX_16_BITS, MAX_8_BITS, false, MAX_16_BITS, MAX_8_BITS);
-        request1 = parse(request.serialize());
-
-        request.serialize();
-
-
-    }
 }

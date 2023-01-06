@@ -395,6 +395,95 @@ class AodvRouterSpec extends Specification {
             getRoute(HOP_5) == updatedForwardRoute
     }
 
+    def "route request is created and user data forwarding is retried if no route exists"() {
+
+        given:
+
+            def ud = new UserData(HOP_5, "test".getBytes())
+
+            def updatedForwardRoute = new Route(HOP_5)
+            updatedForwardRoute.destinationSequence = 10
+            updatedForwardRoute.destinationSequenceValid = true
+            updatedForwardRoute.hopCount = 2
+            updatedForwardRoute.nextHop = HOP_4
+            updatedForwardRoute.lifetime = clock.millis() + 4000
+
+            def req = new RouteRequest(
+                    0,                  // hopCount
+                    1,                  // requestId
+                    HOP_5,              // destinationAddress
+                    0,                  // destinationSequence
+                    true,               // destinationSequenceUnknown
+                    HOP_3,              // originatorAddress
+                    1                   // originatorSequence
+            )
+
+            def reply = new RouteReply(
+                    4000,               // lifetime
+                    HOP_5,              // destinationAddress
+                    10,                 // destinationSequence
+                    HOP_3,              // originatorAddress
+                    1                   // hopCount
+            )
+
+        when:
+
+            router.processUserData(ud, HOP_2)
+
+        then:
+
+            1 * callback.send(req, BROADCAST)
+
+        when:
+
+            router.processRouteReply(reply, HOP_4)
+            sleep(3000)
+
+        then:
+
+            1 * callback.send(ud, HOP_4)
+            getRoute(HOP_5) == updatedForwardRoute
+    }
+
+    def "error is raised after retrying to forward user data for 2 times"() {
+
+        given:
+
+            def ud = new UserData(HOP_5, "test".getBytes())
+
+        when:
+
+            router.processUserData(ud, HOP_2)
+
+        then:
+
+            1 * callback.send(new RouteRequest(0, 1, HOP_5, 0, true, HOP_3, 1), BROADCAST)
+
+        when:
+
+            sleep(3000)
+
+        then:
+
+            1 * callback.send(new RouteRequest(0, 2, HOP_5, 0, true, HOP_3, 2), BROADCAST)
+
+        when:
+
+            sleep(6000)
+
+        then:
+
+            1 * callback.send(new RouteRequest(0, 3, HOP_5, 0, true, HOP_3, 3), BROADCAST)
+
+        when:
+
+            sleep(12000)
+
+        then:
+
+            1 * callback.onError("Destination unreachable")
+    }
+
     def putRoute(Route route) {
         router.routes.put(route.destinationAddress, route)
     }

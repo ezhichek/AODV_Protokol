@@ -20,7 +20,7 @@ public class UserData implements Message {
 
     public UserData(int destinationAddress, byte[] data) {
         this.destinationAddress = validate(destinationAddress, 0, MAX_16_BITS);
-        this.data = data;
+        this.data = data == null ? new byte[0] : data;
     }
 
     public int getDestinationAddress() {
@@ -115,13 +115,4 @@ public class UserData implements Message {
         return ((bytes[0] >> 2) & 0xFF) == TYPE;
     }
 
-    public static void main(String[] args) throws IOException {
-
-
-        final UserData ud1 = new UserData(1234, "Hallo Harald".getBytes());
-        final UserData ud2 = UserData.parse(ud1.serialize());
-
-        System.out.println();
-
-    }
 }
