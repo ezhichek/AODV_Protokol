@@ -217,7 +217,7 @@ public class AodvRouterImpl implements AodvRouter {
         b.append("+--------------------------------------------------+\n");
         b.append("| Addr | Seq | V | A | Hops | Next |      Lifetime |\n");
         b.append("+--------------------------------------------------+\n");
-        routes.values().forEach(r -> b.append(formatRoute(r)));
+        routes.values().forEach(r -> b.append(formatRoute(r)).append('\n'));
         b.append("+--------------------------------------------------+\n");
         System.out.print(b);
     }

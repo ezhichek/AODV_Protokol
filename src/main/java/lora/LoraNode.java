@@ -27,6 +27,8 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
 
     private String lastResponse;
 
+    private boolean sendMode = false;
+
     public LoraNode(SerialPort port) {
         this.port = port;
     }
@@ -40,13 +42,39 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
     }
 
     public String sendMessage(String message) {
+
         try {
-            final String response = commandExecutor.submit(() -> sendAndAwaitResponse(message)).get();
+
+            final String response;
+
+            if (sendMode) {
+                final int destinationAddress = 0; // wie wird die eingegeben?
+                final UserData userData = new UserData(destinationAddress, message.getBytes());
+                final String encodedMessage = Base64.getEncoder().encodeToString(userData.serialize());
+                response = commandExecutor.submit(() -> sendAndAwaitResponse(encodedMessage)).get();
+                sendMode = false;
+            } else {
+                response = commandExecutor.submit(() -> sendAndAwaitResponse(message)).get();
+            }
+
+            if (message.startsWith("AT+SEND")) {
+                sendMode = true;
+            }
+
             if (message.startsWith("AT+ADDR?")) {
-                final int address = Integer.parseInt(StringUtils.substringAfter(response, "="), 16);
+                final int address = Integer.parseInt(StringUtils.substringBetween(response, ",", ","), 16);
                 router.setAddress(address);
             }
+
             return response;
+        } catch (InterruptedException | ExecutionException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String sendInternal(String message) {
+        try {
+            return commandExecutor.submit(() -> sendAndAwaitResponse(message)).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
@@ -178,17 +206,17 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
             final byte[] bytes = message.serialize();
             final String messageStr = Base64.getEncoder().encodeToString(bytes);
 
-            String response = sendMessage("AT+DEST=" + String.format("%04X", destination));
+            String response = sendInternal("AT+DEST=" + String.format("%04X", destination));
             if (!isAtOk(response)) {
                 return;
             }
 
-            response = sendMessage("AT+SEND=" + String.format("%02X", messageStr.length()));
+            response = sendInternal("AT+SEND=" + String.format("%02X", messageStr.length()));
             if (!isAtOk(response)) {
                 return;
             }
 
-            sendMessage(messageStr);
+            sendInternal(messageStr);
 
         } catch (IOException e) {
             System.out.println("Failed to send message: " + e.getMessage());
