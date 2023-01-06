@@ -10,6 +10,8 @@ public interface AodvRouter {
 
     void processRouteReply(RouteReply reply, int prevHop);
 
+    void processUserData(UserData data);
+
     void processUserData(UserData data, int prevHop);
 
     void printRoutes();

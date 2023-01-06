@@ -333,6 +333,44 @@ class AodvRouterSpec extends Specification {
             getRoute(HOP_5) == forwardRoute
     }
 
+    def "route reply is updating the forward route if the sequence number in the routing table is marked as invalid in route table entry"() {
+
+        given:
+
+            def replyIn = new RouteReply(
+                    4000,               // lifetime
+                    HOP_5,              // destinationAddress
+                    10,                 // destinationSequence
+                    HOP_1,              // originatorAddress
+                    1                   // hopCount
+            )
+
+            def forwardRoute = new Route(HOP_5)
+            forwardRoute.destinationSequenceValid = true
+            forwardRoute.destinationSequence = 7
+
+            def expectedForwardRoute = new Route(HOP_5)
+            expectedForwardRoute.destinationSequence = 10
+            expectedForwardRoute.destinationSequenceValid = true
+            expectedForwardRoute.hopCount = 2
+            expectedForwardRoute.nextHop = HOP_4
+            expectedForwardRoute.lifetime = clock.millis() + 4000
+            expectedForwardRoute.active = true
+
+            def reverseRoute = new Route(HOP_1)
+            reverseRoute.nextHop = HOP_2
+            putRoute(reverseRoute)
+
+        when:
+
+            router.processRouteReply(replyIn, HOP_4)
+
+        then:
+
+            1 * callback.send(_, _)
+            getRoute(HOP_5) == expectedForwardRoute
+    }
+
     def putRoute(Route route) {
         router.routes.put(route.destinationAddress, route)
     }

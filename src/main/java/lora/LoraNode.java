@@ -4,7 +4,6 @@ import aodv.*;
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortDataListener;
 import com.fazecast.jSerialComm.SerialPortEvent;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.time.Clock;
@@ -12,6 +11,9 @@ import java.util.Base64;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import static java.lang.Integer.parseInt;
+import static org.apache.commons.lang3.StringUtils.*;
 
 public class LoraNode implements SerialPortDataListener, RoutingCallback {
 
@@ -26,8 +28,6 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
     private final Object lock = new Object();
 
     private String lastResponse;
-
-    private boolean sendMode = false;
 
     public LoraNode(SerialPort port) {
         this.port = port;
@@ -45,36 +45,25 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
 
         try {
 
-            final String response;
+            if (message.startsWith("UD+DEST=")) {
 
-            if (sendMode) {
-                final int destinationAddress = 0; // wie wird die eingegeben?
-                final UserData userData = new UserData(destinationAddress, message.getBytes());
-                final String encodedMessage = Base64.getEncoder().encodeToString(userData.serialize());
-                response = commandExecutor.submit(() -> sendAndAwaitResponse(encodedMessage)).get();
-                sendMode = false;
+                final int destAddr = parseInt(substringBetween(message, "=", ","), 16);
+                final String text = substringAfter(message, ",");
+                router.processUserData(new UserData(destAddr, text.getBytes()));
+
+                return "AT,OK";
+
             } else {
-                response = commandExecutor.submit(() -> sendAndAwaitResponse(message)).get();
+
+                final String response = commandExecutor.submit(() -> sendAndAwaitResponse(message)).get();
+
+                if (message.startsWith("AT+ADDR?")) {
+                    final int address = parseInt(substringBetween(response, ",", ","), 16);
+                    router.setAddress(address);
+                }
+
+                return response;
             }
-
-            if (message.startsWith("AT+SEND")) {
-                sendMode = true;
-            }
-
-            if (message.startsWith("AT+ADDR?")) {
-                final int address = Integer.parseInt(StringUtils.substringBetween(response, ",", ","), 16);
-                router.setAddress(address);
-            }
-
-            return response;
-        } catch (InterruptedException | ExecutionException | IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private String sendInternal(String message) {
-        try {
-            return commandExecutor.submit(() -> sendAndAwaitResponse(message)).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
@@ -148,9 +137,9 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
             return;
         }
 
-        final String[] parts = StringUtils.split(message, ',');
+        final String[] parts = split(message, ',');
 
-        final int address = Integer.parseInt(parts[1].trim());
+        final int address = parseInt(parts[1].trim());
 
         final byte[] bytes = Base64.getDecoder().decode(parts[3]);
 
@@ -206,17 +195,17 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
             final byte[] bytes = message.serialize();
             final String messageStr = Base64.getEncoder().encodeToString(bytes);
 
-            String response = sendInternal("AT+DEST=" + String.format("%04X", destination));
+            String response = sendMessage("AT+DEST=" + String.format("%04X", destination));
             if (!isAtOk(response)) {
                 return;
             }
 
-            response = sendInternal("AT+SEND=" + String.format("%02X", messageStr.length()));
+            response = sendMessage("AT+SEND=" + String.format("%02X", messageStr.length()));
             if (!isAtOk(response)) {
                 return;
             }
 
-            sendInternal(messageStr);
+            sendMessage(messageStr);
 
         } catch (IOException e) {
             System.out.println("Failed to send message: " + e.getMessage());
@@ -232,3 +221,4 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
         System.out.println(msg);
     }
 }
+
