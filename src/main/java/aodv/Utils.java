@@ -17,7 +17,6 @@ public class Utils {
 
     public static final int BROADCAST_ADDRESS = 0xFFFF;
 
-
     public static byte[] toBytes(int value, int length) {
         if (value < 0 || value > Math.pow(2, length * 8)) {
             throw new RuntimeException("Invalid value");
@@ -70,53 +69,5 @@ public class Utils {
         }
         return value;
     }
-
-    public static void main(String[] args) {
-
-        final String s = "Hallo Harald";
-
-        byte[] bytes = s.getBytes();
-
-        print(bytes);
-        shiftBytesLeft(bytes, 2);
-        System.out.println(new String(bytes));
-        print(bytes);
-        shiftBytesRight(bytes, 2);
-        print(bytes);
-        System.out.println(new String(bytes));
-
-
-        System.out.println(toInt(toBytes(1, 6)));
-        System.out.println(toInt(toBytes(10, 6)));
-        System.out.println(toInt(toBytes(100, 6)));
-        System.out.println(toInt(toBytes(1000, 6)));
-        System.out.println(toInt(toBytes(10000, 6)));
-        System.out.println(toInt(toBytes(100000, 6)));
-        System.out.println(toInt(toBytes(1000000, 6)));
-        System.out.println(toInt(toBytes(10000000, 6)));
-        System.out.println(toInt(toBytes(100000000, 6)));
-        System.out.println(toInt(toBytes(1000000000, 6)));
-    }
-
-    private static void print(byte[] bytes) {
-        for (int i = 0; i < bytes.length; i++) {
-            System.out.print(toBinaryString(bytes[i]) + " ");
-        }
-        System.out.println();
-    }
-
-    private static String toBinaryString(byte b) {
-        String s = "";
-        s += (b & 0b10000000) > 0 ? "1" : "0";
-        s += (b & 0b01000000) > 0 ? "1" : "0";
-        s += (b & 0b00100000) > 0 ? "1" : "0";
-        s += (b & 0b00010000) > 0 ? "1" : "0";
-        s += (b & 0b00001000) > 0 ? "1" : "0";
-        s += (b & 0b00000100) > 0 ? "1" : "0";
-        s += (b & 0b00000010) > 0 ? "1" : "0";
-        s += (b & 0b00000001) > 0 ? "1" : "0";
-        return s;
-    }
-
 
 }
