@@ -225,7 +225,7 @@ public class AodvRouterImpl implements AodvRouter {
     }
 
     private static String formatRoute(Route r) {
-        return String.format("| %04X | %3s | %s | %s | %4s | %04X | %d |",
+        return String.format("| %04X | %3d | %s | %s | %4d | %04X | %13d |",
                 r.getDestinationAddress(),
                 r.getDestinationSequence(),
                 r.isDestinationSequenceValid() ? "t" : "f",

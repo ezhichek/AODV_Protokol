@@ -74,6 +74,7 @@ class AodvRouterSpec extends Specification {
         when:
 
             router.processRouteRequest(req, HOP_2)
+            router.printRoutes()
 
         then:
 
