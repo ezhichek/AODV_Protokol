@@ -7,7 +7,6 @@ public class Utils {
     public static final int NET_DIAMETER = 35;
     public static final int NODE_TRAVERSAL_TIME = 40;
     public static final int NET_TRAVERSAL_TIME = 2 * NODE_TRAVERSAL_TIME * NET_DIAMETER;
-    public static final int PATH_DISCOVERY_TIME = 2 * NET_TRAVERSAL_TIME;
     public static final int RREQ_RETRIES = 2;
 
     public static final int INT_MASK = 0xffffffff;

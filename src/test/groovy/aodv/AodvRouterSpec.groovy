@@ -61,7 +61,6 @@ class AodvRouterSpec extends Specification {
             routeToPrevHop.hopCount = 1
             routeToPrevHop.nextHop = HOP_2
             routeToPrevHop.lifetime = ACTIVE_ROUTE_TIMEOUT
-            routeToPrevHop.active = false
 
             def reverseRoute = new Route(HOP_1)
             reverseRoute.destinationSequence = 2
@@ -69,7 +68,6 @@ class AodvRouterSpec extends Specification {
             reverseRoute.hopCount = 2
             reverseRoute.nextHop = HOP_2
             reverseRoute.lifetime = clock.millis() + 2 * NET_TRAVERSAL_TIME - 2L * 2 * NODE_TRAVERSAL_TIME
-            reverseRoute.active = false
 
         when:
 
@@ -81,6 +79,14 @@ class AodvRouterSpec extends Specification {
             1 * callback.send(reply, HOP_2)
             getRoute(HOP_2) == routeToPrevHop
             getRoute(HOP_1) == reverseRoute
+
+        when:
+
+            router.processRouteRequest(req, HOP_2)
+
+        then:
+
+            0 * callback.send(_, _)
 
         where:
 
@@ -119,7 +125,6 @@ class AodvRouterSpec extends Specification {
             route.hopCount = 2
             route.nextHop = HOP_4
             route.lifetime = clock.millis() + 4000
-            route.active = true
             putRoute(route)
 
             def routeToPrevHop = new Route(HOP_2)
@@ -128,7 +133,6 @@ class AodvRouterSpec extends Specification {
             routeToPrevHop.hopCount = 1
             routeToPrevHop.nextHop = HOP_2
             routeToPrevHop.lifetime = ACTIVE_ROUTE_TIMEOUT
-            routeToPrevHop.active = false
 
             def reverseRoute = new Route(HOP_1)
             reverseRoute.destinationSequence = 2
@@ -136,7 +140,6 @@ class AodvRouterSpec extends Specification {
             reverseRoute.hopCount = 2
             reverseRoute.nextHop = HOP_2
             reverseRoute.lifetime = clock.millis() + 2 * NET_TRAVERSAL_TIME - 2L * 2 * NODE_TRAVERSAL_TIME
-            reverseRoute.active = false
             reverseRoute.addPrecursor(HOP_4)
 
             def forwardRoute = new Route(HOP_5)
@@ -145,7 +148,6 @@ class AodvRouterSpec extends Specification {
             forwardRoute.hopCount = 2
             forwardRoute.nextHop = HOP_4
             forwardRoute.lifetime = clock.millis() + 4000
-            forwardRoute.active = true
             forwardRoute.addPrecursor(HOP_2)
 
         when:
@@ -190,8 +192,7 @@ class AodvRouterSpec extends Specification {
                 route.destinationSequenceValid = destinationSequenceValid
                 route.hopCount = 2
                 route.nextHop = HOP_4
-                route.lifetime = clock.millis() + 4000
-                route.active = active
+                route.lifetime = active ? clock.millis() + 4000 : clock.millis() - 4000
                 putRoute(route)
             }
 
@@ -201,7 +202,6 @@ class AodvRouterSpec extends Specification {
             routeToPrevHop.hopCount = 1
             routeToPrevHop.nextHop = HOP_2
             routeToPrevHop.lifetime = ACTIVE_ROUTE_TIMEOUT
-            routeToPrevHop.active = false
 
             def reverseRoute = new Route(HOP_1)
             reverseRoute.destinationSequence = 2
@@ -209,7 +209,6 @@ class AodvRouterSpec extends Specification {
             reverseRoute.hopCount = 2
             reverseRoute.nextHop = HOP_2
             reverseRoute.lifetime = clock.millis() + 2 * NET_TRAVERSAL_TIME - 2L * 2 * NODE_TRAVERSAL_TIME
-            reverseRoute.active = false
 
         when:
 
@@ -256,7 +255,6 @@ class AodvRouterSpec extends Specification {
             routeToPrevHop.hopCount = 1
             routeToPrevHop.nextHop = HOP_4
             routeToPrevHop.lifetime = ACTIVE_ROUTE_TIMEOUT
-            routeToPrevHop.active = false
 
             def reverseRoute = new Route(HOP_1)
             reverseRoute.destinationSequence = 2
@@ -264,7 +262,6 @@ class AodvRouterSpec extends Specification {
             reverseRoute.hopCount = 2
             reverseRoute.nextHop = HOP_2
             reverseRoute.lifetime = clock.millis() + 2 * NET_TRAVERSAL_TIME - 2L * 2 * NODE_TRAVERSAL_TIME
-            reverseRoute.active = false
             putRoute(reverseRoute)
 
             def forwardRoute = new Route(HOP_5)
@@ -273,7 +270,6 @@ class AodvRouterSpec extends Specification {
             forwardRoute.hopCount = 2
             forwardRoute.nextHop = HOP_4
             forwardRoute.lifetime = clock.millis() + 4000
-            forwardRoute.active = true
 
         when:
 
@@ -304,7 +300,6 @@ class AodvRouterSpec extends Specification {
             routeToPrevHop.hopCount = 1
             routeToPrevHop.nextHop = HOP_4
             routeToPrevHop.lifetime = ACTIVE_ROUTE_TIMEOUT
-            routeToPrevHop.active = false
 
             def reverseRoute = new Route(HOP_1)
             reverseRoute.destinationSequence = 2
@@ -312,7 +307,6 @@ class AodvRouterSpec extends Specification {
             reverseRoute.hopCount = 2
             reverseRoute.nextHop = HOP_2
             reverseRoute.lifetime = clock.millis() + 2 * NET_TRAVERSAL_TIME - 2L * 2 * NODE_TRAVERSAL_TIME
-            reverseRoute.active = false
             putRoute(reverseRoute)
 
             def forwardRoute = new Route(HOP_5)
@@ -321,7 +315,6 @@ class AodvRouterSpec extends Specification {
             forwardRoute.hopCount = 2
             forwardRoute.nextHop = HOP_4
             forwardRoute.lifetime = clock.millis() + 4000
-            forwardRoute.active = true
 
         when:
 
@@ -356,7 +349,6 @@ class AodvRouterSpec extends Specification {
             expectedForwardRoute.hopCount = 2
             expectedForwardRoute.nextHop = HOP_4
             expectedForwardRoute.lifetime = clock.millis() + 4000
-            expectedForwardRoute.active = true
 
             def reverseRoute = new Route(HOP_1)
             reverseRoute.nextHop = HOP_2
@@ -370,6 +362,37 @@ class AodvRouterSpec extends Specification {
 
             1 * callback.send(_, _)
             getRoute(HOP_5) == expectedForwardRoute
+    }
+
+    def "user data is forwarded if a route exists"() {
+
+        given:
+
+            def ud = new UserData(HOP_5, "test".getBytes())
+
+            def forwardRoute = new Route(HOP_5)
+            forwardRoute.destinationSequence = 10
+            forwardRoute.destinationSequenceValid = true
+            forwardRoute.hopCount = 2
+            forwardRoute.nextHop = HOP_4
+            forwardRoute.lifetime = clock.millis() + 10
+            putRoute(forwardRoute)
+
+            def updatedForwardRoute = new Route(HOP_5)
+            updatedForwardRoute.destinationSequence = 10
+            updatedForwardRoute.destinationSequenceValid = true
+            updatedForwardRoute.hopCount = 2
+            updatedForwardRoute.nextHop = HOP_4
+            updatedForwardRoute.lifetime = clock.millis() + ACTIVE_ROUTE_TIMEOUT
+
+        when:
+
+            router.processUserData(ud, HOP_2)
+
+        then:
+
+            1 * callback.send(ud, HOP_4)
+            getRoute(HOP_5) == updatedForwardRoute
     }
 
     def putRoute(Route route) {

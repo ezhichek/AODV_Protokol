@@ -115,10 +115,9 @@ public class AodvRouterImpl implements AodvRouter {
         final Route fr = routes.computeIfAbsent(reply.getDestinationAddress(), Route::new);                                     // Search for reverse route with matching Originator Address. If none exists, create a new one or update the current
         if (!fr.isDestinationSequenceValid()                                                                                    // The sequence number in the routing table is marked as invalid in route table entry
                 || (reply.getDestinationSequence()  > fr.getDestinationSequence() && fr.isDestinationSequenceValid())           // The Destination Sequence Number in the RREP is greater than the node's copy of the destination sequence number and the known value is valid
-                || (reply.getDestinationSequence() == fr.getDestinationSequence() && !fr.isActive())                            // The sequence numbers are the same, but the route is marked as inactive
+                || (reply.getDestinationSequence() == fr.getDestinationSequence() && !isActive(fr))                             // The sequence numbers are the same, but the route is marked as inactive
                 || (reply.getDestinationSequence() == fr.getDestinationSequence() && reply.getHopCount() < fr.getHopCount()))   // The sequence numbers are the same, and the New Hop Count is smaller than the hop count in route table entry
         {
-            fr.setActive(true);                                                                                                 // The route is marked as active
             fr.setDestinationSequenceValid(true);                                                                               // The destination sequence number is marked as valid
             fr.setNextHop(prevHop);                                                                                             // The next hop in the route entry is assigned to be the node from which the RREP is received
             fr.setHopCount(reply.getHopCount());                                                                                // The hop count is set to the value of the New Hop Count
@@ -144,13 +143,17 @@ public class AodvRouterImpl implements AodvRouter {
 
     private void processUserData(UserData data, int prevHop, int retries) {
 
+        if (data.getDestinationAddress() == address) {
+            return;
+        }
+
         if (retries > RREQ_RETRIES) {
             routingCallback.onError("Destination unreachable");
             return;
         }
 
         final Route forwardRoute = routes.get(data.getDestinationAddress());
-        if (forwardRoute == null || !forwardRoute.isActive()) {
+        if (forwardRoute == null || !isActive(forwardRoute)) {
 
             final RouteRequest request = new RouteRequest(
                     0,                                                                                                          // Set the Hop Count value to 0.
@@ -161,6 +164,8 @@ public class AodvRouterImpl implements AodvRouter {
                     address,
                     ++sequenceNumber                                                                                            // Set the RREQ Originator Sequence Number to the own sequence number, after it has been incremented for this step.
             );
+
+            receivedRequests.put(data.getDestinationAddress(), address);                                                        // we don't want to process our own request
 
             routingCallback.send(request, BROADCAST_ADDRESS);                                                                   // Send route request
 
@@ -197,20 +202,23 @@ public class AodvRouterImpl implements AodvRouter {
             route.setHopCount(1);
             route.setNextHop(previousHopAddress);
             route.setLifetime(ACTIVE_ROUTE_TIMEOUT);
-            route.setActive(false);
             routes.put(previousHopAddress, route);
         }
     }
 
     private boolean hasValidRoute(RouteRequest request) {
         final Route forwardRoute = routes.get(request.getDestinationAddress());
-        return forwardRoute != null && forwardRoute.isActive()                                                                  // An active route to the destination exists
+        return forwardRoute != null && isActive(forwardRoute)                                                                   // An active route to the destination exists
                 && forwardRoute.isDestinationSequenceValid()                                                                    // And the destination sequence in the route for the destination is valid
                 && forwardRoute.getDestinationSequence() >= request.getDestinationSequence();                                   // And the destination sequence in the route is greater than or equal to the destination sequence of the RREQ
     }
 
     private long minLifetime(int hopCount) {
         return clock.millis() + 2 * NET_TRAVERSAL_TIME - 2L * hopCount * NODE_TRAVERSAL_TIME;
+    }
+
+    private boolean isActive(Route route) {
+        return route.getLifetime() > clock.millis();
     }
 
     @Override
@@ -224,12 +232,12 @@ public class AodvRouterImpl implements AodvRouter {
         System.out.print(b);
     }
 
-    private static String formatRoute(Route r) {
+    private String formatRoute(Route r) {
         return String.format("| %04X | %3d | %s | %s | %4d | %04X | %13d |",
                 r.getDestinationAddress(),
                 r.getDestinationSequence(),
                 r.isDestinationSequenceValid() ? "t" : "f",
-                r.isActive() ? "t" : "f",
+                isActive(r) ? "t" : "f",
                 r.getHopCount(),
                 r.getNextHop(),
                 r.getLifetime());

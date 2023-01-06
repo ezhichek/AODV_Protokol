@@ -22,8 +22,6 @@ public class Route {
 
     private long lifetime;
 
-    private boolean active;
-
     private final Set<Integer> precursors = new LinkedHashSet<>();
 
     public Route(int destinationAddress) {
@@ -74,14 +72,6 @@ public class Route {
         this.lifetime = lifetime;
     }
 
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
-    }
-
     public void addPrecursor(int precursor) {
         precursors.add(precursor);
     }
@@ -102,7 +92,6 @@ public class Route {
                 .append(hopCount, route.hopCount)
                 .append(nextHop, route.nextHop)
                 .append(lifetime, route.lifetime)
-                .append(active, route.active)
                 .append(precursors, route.precursors)
                 .isEquals();
     }
@@ -116,7 +105,6 @@ public class Route {
                 .append(hopCount)
                 .append(nextHop)
                 .append(lifetime)
-                .append(active)
                 .append(precursors)
                 .toHashCode();
     }
@@ -130,7 +118,6 @@ public class Route {
                 .append("hopCount", hopCount)
                 .append("nextHop", nextHop)
                 .append("lifetime", lifetime)
-                .append("active", active)
                 .append("precursors", precursors)
                 .toString();
     }
