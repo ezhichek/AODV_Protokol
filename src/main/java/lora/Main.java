@@ -36,7 +36,6 @@ public class Main {
                 node.sendMessage(command);
             } catch (Exception e) {
                 System.out.println("Failed to send command: " + e.getMessage());
-                node = null;
             }
         }
     }
