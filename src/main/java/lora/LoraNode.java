@@ -53,6 +53,12 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
 
                 return "AT,OK";
 
+            } else if (message.startsWith("ROUTES")) {
+
+                router.printRoutes();
+
+                return "AT,OK";
+
             } else {
 
                 final String response = commandExecutor.submit(() -> sendAndAwaitResponse(message)).get();
@@ -153,21 +159,18 @@ public class LoraNode implements SerialPortDataListener, RoutingCallback {
                     System.out.println(new String(data.getData()));
                 }
                 router.processUserData(data, address);
-                router.printRoutes();
 
             } else if (RouteRequest.isRouteRequest(bytes)) {
 
                 final RouteRequest request = RouteRequest.parse(bytes);
                 System.out.println("< " + request);
                 router.processRouteRequest(request, address);
-                router.printRoutes();
 
             } else if (RouteReply.isRouteReply(bytes)) {
 
                 final RouteReply reply = RouteReply.parse(bytes);
                 System.out.println("< " + reply);
                 router.processRouteReply(reply, address);
-                router.printRoutes();
 
             } else {
 
